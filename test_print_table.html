@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Print Table</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h3>Test: Print Table Only</h3>
+        <button onclick="window.print()" class="btn btn-primary mb-3">Print Table</button>
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr><th>ID</th><th>Name</th><th>Stock</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>1</td><td>Item A</td><td>10</td></tr>
+                    <tr><td>2</td><td>Item B</td><td>5</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="statcard">This should not print</div>
+    </div>
+</body>
+</html>

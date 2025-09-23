@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Update Stock Validation</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <script src="js/jquery-latest.min.js"></script>
+</head>
+<body>
+    <div class="container mt-5">
+        <h3>Test: Update Stock Validation</h3>
+        <form id="stockForm">
+            <div class="form-group">
+                <label>Movement Type</label>
+                <select name="movement_type" class="form-control" required>
+                    <option value="">Select</option>
+                    <option value="in">Stock In (+)</option>
+                    <option value="out">Stock Out (-)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Quantity</label>
+                <input type="number" name="quantity" class="form-control" min="1" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Stock</button>
+        </form>
+        <div id="result" class="mt-3"></div>
+    </div>
+    <script>
+    $('#stockForm').on('submit', function(e) {
+        e.preventDefault();
+        var movement = $('[name="movement_type"]').val();
+        var quantity = parseInt($('[name="quantity"]').val(), 10);
+        if (!movement || quantity <= 0) {
+            $('#result').html('<span class="text-danger">Please enter a valid movement type and quantity greater than 0.</span>');
+        } else {
+            $('#result').html('<span class="text-success">Validation passed. Ready to update stock.</span>');
+        }
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Employee Dropdown</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h3>Test: Employee Dropdown</h3>
+        <form>
+            <label for="employee">Select Employee</label>
+            <select id="employee" class="form-control">
+                <option value="">Select Employee</option>
+                <option value="1">John Doe</option>
+                <option value="2">Jane Smith</option>
+            </select>
+        </form>
+        <p id="dropdownMessage" class="mt-3 text-danger" style="display:none;">No active employees found</p>
+        <button class="btn btn-primary mt-3" onclick="testDropdown()">Test Dropdown</button>
+    </div>
+    <script>
+    function testDropdown() {
+        var select = document.getElementById('employee');
+        if (select.options.length <= 1) {
+            document.getElementById('dropdownMessage').style.display = 'block';
+        } else {
+            document.getElementById('dropdownMessage').style.display = 'none';
+            alert('Dropdown populated correctly!');
+        }
+    }
+    </script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Modal Cancel</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <script src="js/jquery-latest.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+</head>
+<body>
+    <div class="container mt-5">
+        <h3>Test: Modal Cancel Button</h3>
+        <button class="btn btn-primary" data-toggle="modal" data-target="#testModal">Open Modal</button>
+        <div class="modal fade" id="testModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Edit Employee</h5>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    </div>
+                    <form id="testForm">
+                        <div class="modal-body">
+                            <input type="text" class="form-control" placeholder="Name">
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-success">Save</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+    $(document).ready(function () {
+        $('#testModal .btn-secondary[data-dismiss="modal"]').on('click', function () {
+            $('#testModal').modal('hide');
+            $('#testForm')[0].reset();
+        });
+    });
+    </script>
+</body>
+</html>
