@@ -15,17 +15,17 @@
     </div>
     
     <!-- jQuery (must be first) -->
-    <script src="js/jquery-latest.min.js"></script>
+    <script src="js/jquery-3.3.1.min.js"></script>
+    <!-- Bootstrap and Popper -->
+    <script src="js/popper.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
     <!-- Plugins that depend on jQuery -->
     <script src="js/owl.carousel.js"></script>
     <script src="js/jquery.fancybox.js"></script>
     <script src="js/calendar.min.js"></script>
-    <script src="js/semantic-latest.min.js"></script>
+    <script src="js/semantic.min.js"></script>
     <script src="js/animate.js"></script>
     <script src="js/perfect-scrollbar.min.js"></script>
-    <!-- Bootstrap and Popper -->
-    <script src="js/popper.min.js"></script>
-    <script src="js/bootstrap.min.js"></script>
     <!-- Chart.js -->
     <script src="js/Chart.min.js"></script>
     <script src="js/Chart.bundle.min.js"></script>
@@ -35,7 +35,7 @@
     <script src="js/custom_chart.js"></script>
     <script src="js/custom.js"></script>
     <script>
-        var ps = new PerfectScrollbar('#sidebar');
+        // PerfectScrollbar initialization is now handled in custom.js
     </script>
 </body>
 </html>

@@ -34,12 +34,11 @@ if ($_POST) {
                 $error_message = 'No stock available for this item.';
             } else {
                 // Create allocation
-                $query = "INSERT INTO stock_allocations (item_id, user_id, allocated_quantity, remaining_quantity, allocated_by) VALUES (:item_id, :user_id, :quantity, :quantity, :allocated_by)";
+                $query = "INSERT INTO stock_allocations (item_id, user_id, allocated_quantity, remaining_quantity) VALUES (:item_id, :user_id, :quantity, :quantity)";
                 $stmt = $db->prepare($query);
                 $stmt->bindParam(':item_id', $item_id);
                 $stmt->bindParam(':user_id', $user_id_allocate);
                 $stmt->bindParam(':quantity', $quantity);
-                $stmt->bindParam(':allocated_by', $user_id);
                 if ($stmt->execute()) {
                     // Update inventory
                     $new_stock = $current_stock - $quantity;
@@ -98,12 +97,10 @@ if ($filter === 'active') {
     $where_clause .= " AND sa.status = 'cancelled'";
 }
 
-$query = "SELECT sa.*, i.item_name, i.item_code, u.first_name, u.last_name, 
-                 admin.first_name as allocated_by_name, admin.last_name as allocated_by_last
+$query = "SELECT sa.*, i.item_name, i.item_code, u.first_name, u.last_name
           FROM stock_allocations sa 
           JOIN inventory i ON sa.item_id = i.id 
           JOIN users u ON sa.user_id = u.id 
-          JOIN users admin ON sa.allocated_by = admin.id 
           $where_clause ORDER BY sa.allocated_at DESC";
 $stmt = $db->prepare($query);
 $stmt->execute();
@@ -261,7 +258,6 @@ $inventory_items = $stmt->fetchAll();
                                         <th>Allocated Qty</th>
                                         <th>Remaining Qty</th>
                                         <th>Status</th>
-                                        <th>Allocated By</th>
                                         <th>Date</th>
                                         <th>Actions</th>
                                     </tr>
@@ -290,7 +286,6 @@ $inventory_items = $stmt->fetchAll();
                                                         <?php echo ucfirst($allocation['status']); ?>
                                                     </span>
                                                 </td>
-                                                <td><?php echo $allocation['allocated_by_name'] . ' ' . $allocation['allocated_by_last']; ?></td>
                                                 <td><?php echo formatDate($allocation['allocated_at']); ?></td>
                                                 <td>
                                                     <div class="btn-group" role="group">
@@ -318,7 +313,7 @@ $inventory_items = $stmt->fetchAll();
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <tr>
-                                            <td colspan="9" class="text-center">No allocations found</td>
+                                            <td colspan="8" class="text-center">No allocations found</td>
                                         </tr>
                                     <?php endif; ?>
                                 </tbody>

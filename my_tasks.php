@@ -204,7 +204,6 @@ $task_stats = $stmt->fetch();
                                     <tr>
                                         <th>ID</th>
                                         <th>Title</th>
-                                        <th>Assigned By</th>
                                         <th>Priority</th>
                                         <th>Status</th>
                                         <th>Due Date</th>
@@ -223,7 +222,6 @@ $task_stats = $stmt->fetch();
                                                         <br><small class="text-muted"><?php echo substr($task['description'], 0, 100) . (strlen($task['description']) > 100 ? '...' : ''); ?></small>
                                                     <?php endif; ?>
                                                 </td>
-                                                <td><?php echo $task['assigned_by_name'] . ' ' . $task['assigned_by_last']; ?></td>
                                                 <td>
                                                     <span class="badge badge-<?php 
                                                         echo $task['priority'] === 'urgent' ? 'danger' : 

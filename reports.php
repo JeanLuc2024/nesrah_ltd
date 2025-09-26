@@ -350,19 +350,33 @@ $attendance_report = $stmt->fetch();
 
 <style>
 @media print {
-    .sidebar, .topbar, .btn, .form-control, .form-group {
+    /* Hide navigation and controls */
+    .sidebar, .topbar, .btn, .form-control, .form-group, 
+    .navbar, .icon_info, .user_profile_dd, .footer {
         display: none !important;
     }
     
-    .main-content {
+    /* Show main content */
+    #content, .midde_cont, .container-fluid {
         margin: 0 !important;
         padding: 0 !important;
+        width: 100% !important;
+        max-width: none !important;
+    }
+    
+    /* Ensure content is visible */
+    .white_shd, .counter_section, .table-responsive, 
+    .full, .graph_head, .graph_revenue {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
     }
     
     .white_shd {
         box-shadow: none !important;
         border: 1px solid #ddd !important;
         margin-bottom: 20px !important;
+        page-break-inside: avoid;
     }
     
     .page_title h2 {
@@ -380,6 +394,7 @@ $attendance_report = $stmt->fetch();
     table {
         border-collapse: collapse !important;
         width: 100% !important;
+        page-break-inside: avoid;
     }
     
     table th, table td {
@@ -401,6 +416,7 @@ $attendance_report = $stmt->fetch();
     body {
         font-size: 12px !important;
         line-height: 1.4 !important;
+        color: #000 !important;
     }
     
     .print-header {
@@ -420,6 +436,11 @@ $attendance_report = $stmt->fetch();
         margin: 5px 0 0 0;
         font-size: 14px;
         color: #666;
+    }
+    
+    /* Ensure all text is black */
+    * {
+        color: #000 !important;
     }
 }
 

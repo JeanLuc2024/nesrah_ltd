@@ -56,7 +56,7 @@ if ($_POST) {
             $stmt->bindParam(':id', $attendance['id']);
             
             if ($stmt->execute()) {
-                $success_message = 'Successfully checked out! Total hours: ' . number_format($total_hours, 2);
+                $success_message = 'Successfully checked out! Total hours: ' . number_format($total_hours ?? 0, 2);
             } else {
                 $error_message = 'Failed to check out. Please try again.';
             }
@@ -142,7 +142,7 @@ $monthly_stats = $stmt->fetch();
                                         <h4><i class="fa fa-check-circle"></i> Checked Out</h4>
                                         <p><strong>Check In:</strong> <?php echo formatDateTime($today_attendance['check_in']); ?></p>
                                         <p><strong>Check Out:</strong> <?php echo formatDateTime($today_attendance['check_out']); ?></p>
-                                        <p><strong>Total Hours:</strong> <?php echo number_format($today_attendance['total_hours'], 2); ?> hours</p>
+                                        <p><strong>Total Hours:</strong> <?php echo number_format($today_attendance['total_hours'] ?? 0, 2); ?> hours</p>
                                     </div>
                                 <?php else: ?>
                                     <div class="alert alert-success">
@@ -218,7 +218,7 @@ $monthly_stats = $stmt->fetch();
             </div>
             <div class="counter_no">
                 <div>
-                    <p class="total_no"><?php echo number_format($monthly_stats['total_hours'], 1); ?></p>
+                    <p class="total_no"><?php echo number_format($monthly_stats['total_hours'] ?? 0, 1); ?></p>
                     <p class="head_couter">Total Hours</p>
                 </div>
             </div>
@@ -261,7 +261,7 @@ $monthly_stats = $stmt->fetch();
                                                     <?php echo $attendance['check_out'] ? formatDateTime($attendance['check_out']) : 'N/A'; ?>
                                                 </td>
                                                 <td>
-                                                    <?php echo $attendance['total_hours'] ? number_format($attendance['total_hours'], 2) . ' hours' : 'N/A'; ?>
+                                                    <?php echo ($attendance['total_hours'] ?? 0) ? number_format($attendance['total_hours'], 2) . ' hours' : 'N/A'; ?>
                                                 </td>
                                                 <td>
                                                     <span class="badge badge-<?php 

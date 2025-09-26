@@ -1,5 +1,16 @@
 <?php
+
 require_once __DIR__ . '/../config/config.php';
+
+// Helper function to get system setting value
+function getSetting($key) {
+    global $db;
+    $stmt = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = :key LIMIT 1");
+    $stmt->bindParam(':key', $key);
+    $stmt->execute();
+    $row = $stmt->fetch();
+    return $row ? $row['setting_value'] : '';
+}
 
 // Redirect if already logged in
 if (isLoggedIn()) {
@@ -31,8 +42,13 @@ if ($_POST) {
                     $_SESSION['username'] = $user['username'];
                     $_SESSION['user_role'] = $user['role'];
                     $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
-                    
                     redirect('dashboard.php');
+                } elseif ($user['status'] === 'pending') {
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['username'] = $user['username'];
+                    $_SESSION['user_role'] = $user['role'];
+                    $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
+                    redirect('dashboard.php?pending=1');
                 } else {
                     $error_message = 'Your account is not active. Please contact administrator.';
                 }
@@ -63,11 +79,14 @@ if ($_POST) {
         <div class="container">
             <div class="center verticle_center full_height">
                 <div class="login_section">
+                    <div class="company-info text-center mb-4" style="color: #fff;">
+                        <h4><?php echo getSetting('company_name'); ?></h4>
+                        <p><?php echo getSetting('company_address'); ?> | <?php echo getSetting('company_phone'); ?> | <?php echo getSetting('company_email'); ?></p>
+                    </div>
                     <div class="logo_login">
                         <div class="center">
-                            <img width="210" src="../images/logo/logo.png" alt="NESRAH GROUP" />
-                            <h2 style="color: #333; margin-top: 20px;">NESRAH GROUP</h2>
-                            <p style="color: #666;">Management System</p>
+                            <!-- Pluto logo removed -->
+                            <h2 style="color: #fff; margin-top: 20px; background: #007bff; padding: 10px; border-radius: 5px; font-size: 2rem;">NESRAH GROUP Management System</h2>
                         </div>
                     </div>
                     <div class="login_form">

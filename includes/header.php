@@ -102,6 +102,8 @@ if (isEmployee()) {
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="css/semantic.min.css">
+    <link rel="stylesheet" href="css/custom_transitions.css">
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -113,6 +115,53 @@ if (isEmployee()) {
     <link rel="stylesheet" href="css/custom.css" />
     <link rel="stylesheet" href="css/font-awesome.min.css" />
     <style>
+        /* Semantic UI Transitions */
+        .ui.transition {
+            -webkit-transition: all 0.3s ease;
+            -moz-transition: all 0.3s ease;
+            -o-transition: all 0.3s ease;
+            transition: all 0.3s ease;
+        }
+        
+        .ui.fade.transition {
+            -webkit-transition: opacity 0.3s ease;
+            -moz-transition: opacity 0.3s ease;
+            -o-transition: opacity 0.3s ease;
+            transition: opacity 0.3s ease;
+        }
+        
+        .ui.scale.transition {
+            -webkit-transition: transform 0.3s ease;
+            -moz-transition: transform 0.3s ease;
+            -o-transition: transform 0.3s ease;
+            transition: transform 0.3s ease;
+        }
+        
+        /* Modal transitions */
+        .modal.fade .modal-dialog {
+            -webkit-transition: transform 0.3s ease-out;
+            -moz-transition: transform 0.3s ease-out;
+            -o-transition: transform 0.3s ease-out;
+            transition: transform 0.3s ease-out;
+            transform: translate(0, -25%);
+        }
+        
+        .modal.show .modal-dialog {
+            transform: translate(0, 0);
+        }
+        
+        .modal-backdrop {
+            opacity: 0;
+            -webkit-transition: opacity 0.3s ease;
+            -moz-transition: opacity 0.3s ease;
+            -o-transition: opacity 0.3s ease;
+            transition: opacity 0.3s ease;
+        }
+        
+        .modal-backdrop.show {
+            opacity: 0.5;
+        }
+        
         /* Responsive improvements */
         @media (max-width: 768px) {
             .logo_section h3 {
@@ -132,6 +181,22 @@ if (isEmployee()) {
             }
             .icon_info ul li a {
                 padding: 8px !important;
+            }
+            .sidebar_toggle {
+                z-index: 9999 !important;
+                position: relative !important;
+                background: #007bff !important;
+                color: white !important;
+                border: none !important;
+                padding: 10px 15px !important;
+                border-radius: 5px !important;
+                margin-right: 10px !important;
+            }
+            .sidebar_toggle:hover {
+                background: #0056b3 !important;
+            }
+            .sidebar_toggle i {
+                font-size: 1.2rem !important;
             }
         }
         
@@ -235,9 +300,6 @@ if (isEmployee()) {
                         <li class="<?php echo basename($_SERVER['PHP_SELF']) == 'profile.php' ? 'active' : ''; ?>">
                             <a href="profile.php"><i class="fa fa-user yellow_color"></i> <span>Profile</span></a>
                         </li>
-                        <li class="<?php echo basename($_SERVER['PHP_SELF']) == 'settings.php' ? 'active' : ''; ?>">
-                            <a href="settings.php"><i class="fa fa-cog yellow_color"></i> <span>Settings</span></a>
-                        </li>
                     </ul>
                 </div>
             </nav>
@@ -249,7 +311,7 @@ if (isEmployee()) {
                 <div class="topbar">
                     <nav class="navbar navbar-expand-lg navbar-light">
                         <div class="full">
-                            <button type="button" id="sidebarCollapse" class="sidebar_toggle"><i class="fa fa-bars"></i></button>
+                            <button type="button" id="sidebarCollapse" class="sidebar_toggle" style="z-index: 9999; position: relative;"><i class="fa fa-bars"></i></button>
                             <!-- Logo removed as requested -->
                             <div class="right_topbar">
                                 <div class="icon_info">
@@ -270,7 +332,6 @@ if (isEmployee()) {
                                             </a>
                                             <div class="dropdown-menu">
                                                 <a class="dropdown-item" href="profile.php">My Profile</a>
-                                                <a class="dropdown-item" href="settings.php">Settings</a>
                                                 <a class="dropdown-item" href="auth/logout.php">
                                                     <span>Log Out</span> <i class="fa fa-sign-out"></i>
                                                 </a>

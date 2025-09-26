@@ -34,7 +34,7 @@ $query = "SELECT
             COUNT(*) as total_sales,
             COALESCE(SUM(total_amount), 0) as total_revenue,
             COALESCE(AVG(total_amount), 0) as average_sale
-          FROM sales $where_clause";
+          FROM sales s $where_clause";
 $stmt = $db->prepare($query);
 $stmt->execute();
 $sales_stats = $stmt->fetch();

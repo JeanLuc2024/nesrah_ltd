@@ -104,9 +104,42 @@ if ($_POST) {
                     $error_message = 'Failed to update stock.';
                 }
             }
+    } elseif ($action === 'delete_item') {
+        $item_id = intval($_POST['item_id']);
+        $notes = sanitizeInput($_POST['notes']);
+        
+        // Get item details before deletion
+        $query = "SELECT item_name, current_stock FROM inventory WHERE id = :item_id";
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(':item_id', $item_id);
+        $stmt->execute();
+        $item = $stmt->fetch();
+        
+        if ($item) {
+            // Record stock history before deletion
+            $history_query = "INSERT INTO stock_history (item_id, movement_type, quantity, previous_stock, new_stock, created_by, notes) 
+                             VALUES (:item_id, 'out', :quantity, :previous_stock, 0, :created_by, :notes)";
+            $history_stmt = $db->prepare($history_query);
+            $history_stmt->bindParam(':item_id', $item_id);
+            $history_stmt->bindParam(':quantity', $item['current_stock']);
+            $history_stmt->bindParam(':previous_stock', $item['current_stock']);
+            $history_stmt->bindParam(':created_by', $user_id);
+            $history_stmt->bindParam(':notes', $notes);
+            $history_stmt->execute();
+            
+            // Delete the item
+            $query = "DELETE FROM inventory WHERE id = :item_id";
+            $stmt = $db->prepare($query);
+            $stmt->bindParam(':item_id', $item_id);
+            
+            if ($stmt->execute()) {
+                $success_message = 'Item "' . $item['item_name'] . '" has been deleted successfully.';
+            } else {
+                $error_message = 'Failed to delete item.';
+            }
+        } else {
+            $error_message = 'Item not found.';
         }
-    }
-}
 
 // Get inventory items
 $query = "SELECT * FROM inventory ORDER BY created_at DESC";
@@ -279,52 +312,34 @@ $low_stock_items = $stmt->fetchAll();
                                                     <?php endif; ?>
                                                 </td>
                                                 <td>
-                                                    <button class="btn btn-sm btn-primary" data-toggle="modal" data-target="#stockModal<?php echo $item['id']; ?>">
-                                                        <i class="fa fa-edit"></i> Update Stock
+                                                    <button class="btn btn-sm btn-danger" data-toggle="modal" data-target="#deleteModal<?php echo $item['id']; ?>">
+                                                        <i class="fa fa-trash"></i> Delete Item
                                                     </button>
                                                 </td>
                                             </tr>
                                             
-                                            <!-- Stock Update Modal -->
-                                            <div class="modal fade" id="stockModal<?php echo $item['id']; ?>" tabindex="-1">
+                                            <!-- Delete Item Modal -->
+                                            <div class="modal fade" id="deleteModal<?php echo $item['id']; ?>" tabindex="-1">
                                                 <div class="modal-dialog">
                                                     <div class="modal-content">
                                                         <div class="modal-header">
-                                                            <h5 class="modal-title">Update Stock - <?php echo $item['item_name']; ?></h5>
+                                                            <h5 class="modal-title">Delete Item - <?php echo $item['item_name']; ?></h5>
                                                             <button type="button" class="close" data-dismiss="modal">
                                                                 <span>&times;</span>
                                                             </button>
                                                         </div>
                                                         <form method="POST">
                                                             <div class="modal-body">
-                                                                <input type="hidden" name="action" value="update_stock">
+                                                                <input type="hidden" name="action" value="delete_item">
                                                                 <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
-                                                                
-                                                                <div class="form-group">
-                                                                    <label>Current Stock: <?php echo $item['current_stock']; ?></label>
-                                                                </div>
-                                                                
-                                                                <div class="form-group">
-                                                                    <label>Movement Type</label>
-                                                                    <select name="movement_type" class="form-control" required>
-                                                                        <option value="in">Stock In (+)</option>
-                                                                        <option value="out">Stock Out (-)</option>
-                                                                    </select>
-                                                                </div>
-                                                                
-                                                                <div class="form-group">
-                                                                    <label>Quantity</label>
-                                                                    <input type="number" name="quantity" class="form-control" min="1" required>
-                                                                </div>
-                                                                
-                                                                <div class="form-group">
+                                                                <p>Are you sure you want to delete <strong><?php echo $item['item_name']; ?></strong>?</p>
                                                                     <label>Notes</label>
                                                                     <textarea name="notes" class="form-control" rows="3"></textarea>
                                                                 </div>
                                                             </div>
                                                             <div class="modal-footer">
                                                                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                                                                <button type="submit" class="btn btn-primary">Update Stock</button>
+                                                                <button type="submit" class="btn btn-danger">Delete Item</button>
                                                             </div>
                                                         </form>
                                                     </div>
@@ -347,16 +362,22 @@ $low_stock_items = $stmt->fetchAll();
 </div>
 
 <script>
-$(document).ready(function () {
-    $('[id^=stockModal] .btn-secondary[data-dismiss="modal"]').on('click', function () {
-        var modal = $(this).closest('.modal');
-        if (typeof $.fn.modal !== 'undefined') {
-            modal.modal('hide');
-        } else {
-            modal[0].style.display = 'none';
-            modal[0].classList.remove('show');
-        }
-        modal.find('form')[0].reset();
+document.addEventListener('DOMContentLoaded', function() {
+    var stockModalCancelBtns = document.querySelectorAll('[id^=stockModal] .btn-secondary[data-dismiss="modal"]');
+    stockModalCancelBtns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var modal = this.closest('.modal');
+            if (typeof $ !== 'undefined' && typeof $.fn.modal !== 'undefined') {
+                $(modal).modal('hide');
+            } else {
+                modal.style.display = 'none';
+                modal.classList.remove('show');
+            }
+            var form = modal.querySelector('form');
+            if (form) {
+                form.reset();
+            }
+        });
     });
 });
 </script>

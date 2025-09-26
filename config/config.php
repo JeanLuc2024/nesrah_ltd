@@ -84,7 +84,7 @@ function redirect($url) {
 }
 
 function formatCurrency($amount) {
-    return '$' . number_format($amount ?? 0, 2);
+    return number_format($amount ?? 0, 0) . ' RWF';
 }
 
 function formatDate($date) {
@@ -112,6 +112,12 @@ function getTimeAgo($datetime) {
     if ($time < 2592000) return floor($time/86400) . ' days ago';
     if ($time < 31536000) return floor($time/2592000) . ' months ago';
     return floor($time/31536000) . ' years ago';
+}
+
+// Handle attribution reporting warnings for localhost development
+if (isset($_SERVER['HTTP_HOST']) && ($_SERVER['HTTP_HOST'] === 'localhost' || $_SERVER['HTTP_HOST'] === '127.0.0.1')) {
+    // Suppress attribution reporting warnings for localhost
+    header('Attribution-Reporting-Eligible: false');
 }
 
 // Error reporting (disable in production)

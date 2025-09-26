@@ -78,17 +78,6 @@ if (isAdmin()) {
             <span>&times;</span>
         </button>
     </div>
-<?php endif; ?>
-
-<?php if ($error_message): ?>
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <?php echo $error_message; ?>
-        <button type="button" class="close" data-dismiss="alert">
-            <span>&times;</span>
-        </button>
-    </div>
-<?php endif; ?>
-
 <?php if (isAdmin()): ?>
 <!-- System Settings -->
 <div class="row">
@@ -128,6 +117,7 @@ if (isAdmin()) {
         </div>
     </div>
 </div>
+<?php endif; ?>
 <?php else: ?>
 <!-- Employee Profile Settings -->
 <div class="row">

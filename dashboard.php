@@ -58,6 +58,9 @@ if (isAdmin()) {
         <div class="page_title">
             <h2>Dashboard</h2>
             <p>Welcome back, <?php echo $user_name; ?>!</p>
+            <?php if (isset($_GET['pending']) && $_GET['pending'] == 1): ?>
+                <div class="alert alert-warning mt-3">Your account is pending approval. You have limited access until approved.</div>
+            <?php endif; ?>
         </div>
     </div>
 </div>

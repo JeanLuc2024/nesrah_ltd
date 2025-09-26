@@ -22,18 +22,7 @@ if ($_POST) {
     $stmt->execute();
     $current_user = $stmt->fetch();
     
-    // Validate email if changed
-    if ($email !== $current_user['email']) {
-        $query = "SELECT id FROM users WHERE email = :email AND id != :user_id";
-        $stmt = $db->prepare($query);
-        $stmt->bindParam(':email', $email);
-        $stmt->bindParam(':user_id', $user_id);
-        $stmt->execute();
-        
-        if ($stmt->rowCount() > 0) {
-            $error_message = 'Email already exists.';
-        }
-    }
+    $error_message = '';
     
     // Validate password if provided
     if (!empty($new_password)) {
@@ -43,6 +32,19 @@ if ($_POST) {
             $error_message = 'New passwords do not match.';
         } elseif (strlen($new_password) < 6) {
             $error_message = 'New password must be at least 6 characters long.';
+        }
+    }
+    
+    // Validate email only if it has changed and no password errors
+    if (empty($error_message) && $email !== $current_user['email']) {
+        $query = "SELECT id FROM users WHERE email = :email AND id != :user_id";
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':user_id', $user_id);
+        $stmt->execute();
+        
+        if ($stmt->rowCount() > 0) {
+            $error_message = 'Email already exists. Please use a different email address.';
         }
     }
     

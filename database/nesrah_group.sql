@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 23, 2025 at 09:59 AM
+-- Generation Time: Sep 23, 2025 at 12:13 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -45,7 +45,8 @@ CREATE TABLE `attendance` (
 
 INSERT INTO `attendance` (`id`, `user_id`, `check_in`, `check_out`, `work_date`, `total_hours`, `status`, `notes`, `created_at`) VALUES
 (1, 2, '2025-09-21 18:23:09', NULL, '2025-09-21', 0.00, 'present', NULL, '2025-09-21 18:23:09'),
-(2, 2, '2025-09-22 09:52:08', '2025-09-22 09:52:12', '2025-09-22', 0.00, 'present', NULL, '2025-09-22 09:52:08');
+(2, 2, '2025-09-22 09:52:08', '2025-09-22 09:52:12', '2025-09-22', 0.00, 'present', NULL, '2025-09-22 09:52:08'),
+(3, 3, '2025-09-23 09:46:08', NULL, '2025-09-23', 0.00, 'present', NULL, '2025-09-23 09:46:08');
 
 -- --------------------------------------------------------
 
@@ -93,7 +94,8 @@ INSERT INTO `inventory` (`id`, `item_code`, `item_name`, `description`, `categor
 (4, 'ITM004', 'Notebook', 'A4 size spiral bound notebook', 'Stationery', 4.99, 200, 50, '2025-09-21 13:20:52', '2025-09-21 13:20:52'),
 (5, 'ITM005', 'Pen Set', 'Set of 5 ballpoint pens', 'Stationery', 12.99, 150, 30, '2025-09-21 13:20:52', '2025-09-21 13:20:52'),
 (6, 'ITM8409', 'Rice', 'Pakistan rice', 'Food', 1000.00, 500, 0, '2025-09-21 18:00:45', '2025-09-21 18:00:45'),
-(7, 'ITM3821', 'ibirayi', 'fhsdhfsdakfsdajghjfas', 'Ibikoreshoooo', 5000.00, 50, 10, '2025-09-22 09:55:47', '2025-09-22 09:59:12');
+(7, 'ITM3821', 'ibirayi', 'fhsdhfsdakfsdajghjfas', 'Ibikoreshoooo', 5000.00, 1820, 10, '2025-09-22 09:55:47', '2025-09-23 09:55:03'),
+(8, 'ITM1488', 'dfsdfsdfs', 'jrnertnerjterter', 'hhhhhhh', 1000.00, 10, 2, '2025-09-23 08:35:58', '2025-09-23 09:57:38');
 
 -- --------------------------------------------------------
 
@@ -122,7 +124,8 @@ CREATE TABLE `sales` (
 --
 
 INSERT INTO `sales` (`id`, `user_id`, `item_id`, `customer_name`, `customer_phone`, `customer_email`, `quantity`, `unit_price`, `total_amount`, `payment_method`, `payment_status`, `notes`, `created_at`) VALUES
-(1, 2, 7, 'king david', '0788907645', 'kingdavid@gmail.com', 20, 5000.00, 100000.00, 'cash', 'paid', 'thank you', '2025-09-22 10:52:17');
+(1, 2, 7, 'king david', '0788907645', 'kingdavid@gmail.com', 20, 5000.00, 100000.00, 'cash', 'paid', 'thank you', '2025-09-22 10:52:17'),
+(2, 3, 8, 'Hozanna', '0788487100', 'hozanna@gmail.com', 2, 700.00, 1400.00, 'bank_transfer', 'paid', 'delivered to shalom school', '2025-09-23 10:02:54');
 
 -- --------------------------------------------------------
 
@@ -147,7 +150,8 @@ CREATE TABLE `stock_allocations` (
 --
 
 INSERT INTO `stock_allocations` (`id`, `item_id`, `user_id`, `allocated_quantity`, `remaining_quantity`, `status`, `allocated_by`, `allocated_at`, `completed_at`) VALUES
-(1, 7, 2, 50, 30, 'active', 1, '2025-09-22 09:59:12', NULL);
+(1, 7, 2, 50, 30, 'completed', 1, '2025-09-22 09:59:12', '2025-09-23 08:39:06'),
+(2, 8, 3, 10, 8, 'active', 1, '2025-09-23 09:57:38', NULL);
 
 -- --------------------------------------------------------
 
@@ -175,7 +179,12 @@ CREATE TABLE `stock_history` (
 INSERT INTO `stock_history` (`id`, `item_id`, `movement_type`, `quantity`, `previous_stock`, `new_stock`, `reference_id`, `notes`, `created_by`, `created_at`) VALUES
 (1, 6, 'in', 500, 0, 500, NULL, 'Initial stock', 1, '2025-09-21 18:00:45'),
 (2, 7, 'in', 100, 0, 100, NULL, 'Initial stock', 1, '2025-09-22 09:55:47'),
-(3, 7, 'allocation', 50, 100, 50, NULL, 'Stock allocated to employee', 1, '2025-09-22 09:59:12');
+(3, 7, 'allocation', 50, 100, 50, NULL, 'Stock allocated to employee', 1, '2025-09-22 09:59:12'),
+(4, 8, 'in', 20, 0, 20, NULL, 'Initial stock', 1, '2025-09-23 08:35:58'),
+(5, 7, 'in', 100, 50, 150, NULL, '', 1, '2025-09-23 09:53:58'),
+(6, 7, 'in', 800, 500, 1300, NULL, '', 1, '2025-09-23 09:54:28'),
+(7, 7, 'in', 920, 900, 1820, NULL, '', 1, '2025-09-23 09:55:03'),
+(8, 8, 'allocation', 10, 20, 10, NULL, 'Stock allocated from approved request', 1, '2025-09-23 09:57:38');
 
 -- --------------------------------------------------------
 
@@ -201,7 +210,8 @@ CREATE TABLE `stock_requests` (
 --
 
 INSERT INTO `stock_requests` (`id`, `item_id`, `user_id`, `requested_quantity`, `reason`, `status`, `reviewed_by`, `reviewed_at`, `admin_notes`, `created_at`) VALUES
-(1, 2, 2, 500, 'zashize', 'pending', NULL, NULL, NULL, '2025-09-21 18:55:08');
+(1, 2, 2, 500, 'zashize', 'rejected', 1, '2025-09-23 09:27:22', 'the stock is tooo many', '2025-09-21 18:55:08'),
+(2, 8, 3, 10, 'I want to supply to Lanari', 'approved', 1, '2025-09-23 09:57:38', 'okay ntaribi uyikoreshe neza', '2025-09-23 09:46:46');
 
 -- --------------------------------------------------------
 
@@ -226,7 +236,7 @@ INSERT INTO `system_settings` (`id`, `setting_key`, `setting_value`, `descriptio
 (2, 'company_address', 'Musanze, Rwanda', 'Company address', '2025-09-22 10:10:29'),
 (3, 'company_phone', '0790635888', 'Company phone number', '2025-09-22 10:10:14'),
 (4, 'company_email', 'info@nesrahgroup.com', 'Company email address', '2025-09-21 13:20:52'),
-(5, 'mission', 'To provide excellent business management solutions', 'Company mission', '2025-09-21 13:20:52'),
+(5, 'mission', 'To provide excellent business management solutionssss', 'Company mission', '2025-09-23 10:08:44'),
 (6, 'vision', 'To be the leading provider of comprehensive business management systems', 'Company vision', '2025-09-21 13:20:52');
 
 -- --------------------------------------------------------
@@ -254,7 +264,8 @@ CREATE TABLE `tasks` (
 --
 
 INSERT INTO `tasks` (`id`, `title`, `description`, `assigned_to`, `assigned_by`, `priority`, `status`, `due_date`, `completed_at`, `created_at`, `updated_at`) VALUES
-(1, 'uuuuuauaaaaaaaaahhhhhhhhhh', 'come tomorrow in the office', 2, 1, 'urgent', 'in_progress', '2025-09-23', NULL, '2025-09-22 10:01:38', '2025-09-22 10:50:38');
+(1, 'uuuuuauaaaaaaaaahhhhhhhhhh', 'come tomorrow in the office', 2, 1, 'urgent', 'completed', '2025-09-23', '2025-09-23 09:27:39', '2025-09-22 10:01:38', '2025-09-23 09:27:39'),
+(2, 'kugurisha kugihe', 'uyu munsi dushaka ko ugurisha byinshi cyane koko', 3, 1, 'urgent', 'in_progress', '2025-09-23', NULL, '2025-09-23 09:58:18', '2025-09-23 10:01:13');
 
 -- --------------------------------------------------------
 
@@ -284,7 +295,8 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `username`, `email`, `password`, `plain_password`, `first_name`, `last_name`, `phone`, `address`, `role`, `status`, `created_at`, `updated_at`) VALUES
 (1, 'admin', '', '$2y$10$xqyiGG1yG03qZygVpuhdh.fxtTmEoZB8rDoBtqCR3uHq.aqSMgTHW', 'admin123', '', '', '', '', 'admin', 'active', '2025-09-21 13:20:52', '2025-09-23 07:58:33'),
-(2, 'prince', 'prince@gmail.com', '$2y$10$8G2R/0NjgijKo2inIase8OtHdbWUmCxgwBAIGs7omYyjQBVXcQMvi', 'prince123', 'ishimwe', 'prince', '0790635888', '', 'employee', 'active', '2025-09-21 18:20:05', '2025-09-23 07:06:19');
+(2, 'prince', 'prince@gmail.com', '$2y$10$8G2R/0NjgijKo2inIase8OtHdbWUmCxgwBAIGs7omYyjQBVXcQMvi', 'prince123', 'ishimwe', 'prince', '0790635888', '', 'employee', 'active', '2025-09-21 18:20:05', '2025-09-23 07:06:19'),
+(3, 'haranira', 'haranira@gmail.com', '$2y$10$0JlnL3uTb6Q3eX7ET1iQKOlxGHPedGL9tGptUAlkYLD0R/uocD82O', NULL, 'izabayoo', 'haranira', '0790635888', '', 'employee', 'active', '2025-09-23 09:41:39', '2025-09-23 09:49:08');
 
 --
 -- Indexes for dumped tables
@@ -377,7 +389,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `attendance`
 --
 ALTER TABLE `attendance`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `employee_communications`
@@ -389,31 +401,31 @@ ALTER TABLE `employee_communications`
 -- AUTO_INCREMENT for table `inventory`
 --
 ALTER TABLE `inventory`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `sales`
 --
 ALTER TABLE `sales`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `stock_allocations`
 --
 ALTER TABLE `stock_allocations`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `stock_history`
 --
 ALTER TABLE `stock_history`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `stock_requests`
 --
 ALTER TABLE `stock_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `system_settings`
@@ -425,13 +437,13 @@ ALTER TABLE `system_settings`
 -- AUTO_INCREMENT for table `tasks`
 --
 ALTER TABLE `tasks`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- Constraints for dumped tables

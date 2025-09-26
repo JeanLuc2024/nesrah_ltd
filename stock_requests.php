@@ -340,28 +340,41 @@ $requests = $stmt->fetchAll();
 </div>
 
 <script>
-$(document).ready(function () {
-    // Approve modal cancel button
-    $('[id^=approveModal] .btn-secondary[data-dismiss="modal"]').on('click', function () {
-        var modal = $(this).closest('.modal');
-        if (typeof $.fn.modal !== 'undefined') {
-            modal.modal('hide');
-        } else {
-            modal[0].style.display = 'none';
-            modal[0].classList.remove('show');
-        }
-        modal.find('form')[0].reset();
+document.addEventListener('DOMContentLoaded', function() {
+    // Approve modal cancel buttons
+    var approveCancelBtns = document.querySelectorAll('[id^=approveModal] .btn-secondary[data-dismiss="modal"]');
+    approveCancelBtns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var modal = this.closest('.modal');
+            if (typeof $ !== 'undefined' && typeof $.fn.modal !== 'undefined') {
+                $(modal).modal('hide');
+            } else {
+                modal.style.display = 'none';
+                modal.classList.remove('show');
+            }
+            var form = modal.querySelector('form');
+            if (form) {
+                form.reset();
+            }
+        });
     });
-    // Reject modal cancel button
-    $('[id^=rejectModal] .btn-secondary[data-dismiss="modal"]').on('click', function () {
-        var modal = $(this).closest('.modal');
-        if (typeof $.fn.modal !== 'undefined') {
-            modal.modal('hide');
-        } else {
-            modal[0].style.display = 'none';
-            modal[0].classList.remove('show');
-        }
-        modal.find('form')[0].reset();
+    
+    // Reject modal cancel buttons
+    var rejectCancelBtns = document.querySelectorAll('[id^=rejectModal] .btn-secondary[data-dismiss="modal"]');
+    rejectCancelBtns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var modal = this.closest('.modal');
+            if (typeof $ !== 'undefined' && typeof $.fn.modal !== 'undefined') {
+                $(modal).modal('hide');
+            } else {
+                modal.style.display = 'none';
+                modal.classList.remove('show');
+            }
+            var form = modal.querySelector('form');
+            if (form) {
+                form.reset();
+            }
+        });
     });
 });
 </script>

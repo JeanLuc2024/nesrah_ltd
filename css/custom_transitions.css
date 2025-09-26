@@ -1,0 +1,8 @@
+/* Custom transitions for Semantic UI modals and dimmers */
+.ui.dimmer.modals.page,
+.modal.fade {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    -webkit-transition: opacity 0.3s ease, -webkit-transform 0.3s ease;
+    -moz-transition: opacity 0.3s ease, -moz-transform 0.3s ease;
+    -o-transition: opacity 0.3s ease, -o-transform 0.3s ease;
+}

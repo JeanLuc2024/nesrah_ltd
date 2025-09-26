@@ -302,6 +302,12 @@ $recent_sales = $stmt->fetchAll();
             <div class="full graph_revenue">
                 <div class="row">
                     <div class="col-md-12">
+                        <form method="GET" class="form-inline mb-3">
+                            <input type="date" name="start_date" class="form-control mr-2" value="<?php echo $_GET['start_date'] ?? date('Y-m-01'); ?>" required>
+                            <input type="date" name="end_date" class="form-control mr-2" value="<?php echo $_GET['end_date'] ?? date('Y-m-d'); ?>" required>
+                            <button type="submit" class="btn btn-primary">Filter</button>
+                            <button type="button" class="btn btn-secondary ml-2" onclick="window.print()">Print</button>
+                        </form>
                         <?php if (count($recent_sales) > 0): ?>
                             <div class="table-responsive">
                                 <table class="table table-striped table-bordered">

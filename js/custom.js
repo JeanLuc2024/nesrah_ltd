@@ -27,7 +27,14 @@ $(document).ready(function () {
     scrollbar js
 --------------------------------------*/
 
-var ps = new PerfectScrollbar('#sidebar');
+// Initialize PerfectScrollbar when DOM is ready and PerfectScrollbar is available
+$(document).ready(function() {
+    if (typeof PerfectScrollbar !== 'undefined') {
+        var ps = new PerfectScrollbar('#sidebar');
+    } else {
+        console.warn('PerfectScrollbar is not loaded');
+    }
+});
 
 /*--------------------------------------
     form validation
