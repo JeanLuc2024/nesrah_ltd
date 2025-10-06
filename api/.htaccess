@@ -1,0 +1,11 @@
+RewriteEngine On
+RewriteBase /nesrah/api/
+
+# Handle requests to /api/orders/{id}
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^orders/([0-9]+)$ orders.php?id=$1 [QSA,L]
+
+# Handle 404 errors
+ErrorDocument 404 "{\"error\": \"Not found\"}"
+ErrorDocument 500 "{\"error\": \"Internal server error\"}"

@@ -269,8 +269,8 @@ if (isEmployee()) {
                         <li class="<?php echo basename($_SERVER['PHP_SELF']) == 'tasks.php' ? 'active' : ''; ?>">
                             <a href="tasks.php"><i class="fa fa-tasks purple_color"></i> <span>Tasks</span></a>
                         </li>
-                        <li class="<?php echo basename($_SERVER['PHP_SELF']) == 'sales.php' ? 'active' : ''; ?>">
-                            <a href="sales.php"><i class="fa fa-shopping-cart blue2_color"></i> <span>Sales</span></a>
+                        <li class="<?php echo basename($_SERVER['PHP_SELF']) == 'orders.php' ? 'active' : ''; ?>">
+                            <a href="orders.php"><i class="fa fa-shopping-cart blue2_color"></i> <span>Orders</span></a>
                         </li>
                         <li class="<?php echo basename($_SERVER['PHP_SELF']) == 'reports.php' ? 'active' : ''; ?>">
                             <a href="reports.php"><i class="fa fa-bar-chart-o green_color"></i> <span>Reports</span></a>
@@ -278,7 +278,7 @@ if (isEmployee()) {
                         <?php else: ?>
                         <!-- Employee Menu -->
                         <li class="<?php echo basename($_SERVER['PHP_SELF']) == 'attendance.php' ? 'active' : ''; ?>">
-                            <a href="attendance.php"><i class="fa fa-clock-o blue1_color"></i> <span>Attendance</span></a>
+                            <a href="attendance.php"><i class="fa fa-calendar-check-o blue1_color"></i> <span>Attendance</span></a>
                         </li>
                         <li class="<?php echo basename($_SERVER['PHP_SELF']) == 'my_tasks.php' ? 'active' : ''; ?>">
                             <a href="my_tasks.php"><i class="fa fa-tasks purple_color"></i> <span>My Tasks</span></a>
@@ -290,10 +290,13 @@ if (isEmployee()) {
                             <a href="request_stock.php"><i class="fa fa-hand-paper-o red_color"></i> <span>Request Stock</span></a>
                         </li>
                         <li class="<?php echo basename($_SERVER['PHP_SELF']) == 'record_sales.php' ? 'active' : ''; ?>">
-                            <a href="record_sales.php"><i class="fa fa-shopping-cart blue2_color"></i> <span>Record Sales</span></a>
+                            <a href="record_sales.php"><i class="fa fa-money blue2_color"></i> <span>Record Sales</span></a>
                         </li>
                         <li class="<?php echo basename($_SERVER['PHP_SELF']) == 'my_sales.php' ? 'active' : ''; ?>">
-                            <a href="my_sales.php"><i class="fa fa-chart-line green_color"></i> <span>My Sales</span></a>
+                            <a href="my_sales.php"><i class="fa fa-line-chart green_color"></i> <span>My Sales</span></a>
+                        </li>
+                        <li class="<?php echo basename($_SERVER['PHP_SELF']) == 'employee_orders.php' ? 'active' : ''; ?>">
+                            <a href="employee_orders.php"><i class="fa fa-shopping-bag orange_color"></i> <span>Orders</span></a>
                         </li>
                         <?php endif; ?>
                         

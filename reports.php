@@ -45,16 +45,23 @@ $query = "SELECT u.first_name, u.last_name, COUNT(s.id) as total_sales, SUM(s.to
           GROUP BY s.user_id, u.first_name, u.last_name 
           ORDER BY total_revenue DESC";
 $stmt = $db->prepare($query);
-$stmt->bindParam(':start_date', $start_date);
 $stmt->bindParam(':end_date', $end_date);
 $stmt->execute();
 $employee_performance = $stmt->fetchAll();
 
 // Stock Movement Report
-$query = "SELECT sh.*, i.item_name, i.item_code, u.first_name, u.last_name
-          FROM stock_history sh 
-          JOIN inventory i ON sh.item_id = i.id 
-          JOIN users u ON sh.created_by = u.id 
+$query = "SELECT
+            sh.*,
+            i.item_name,
+            i.item_code,
+            u.first_name,
+            u.last_name,
+            s.customer_name,
+            s.customer_phone
+          FROM stock_history sh
+          JOIN inventory i ON sh.item_id = i.id
+          LEFT JOIN users u ON sh.created_by = u.id
+          LEFT JOIN sales s ON sh.reference_id = s.id AND sh.reference_type = 'sale'
           WHERE DATE(sh.created_at) BETWEEN :start_date AND :end_date
           ORDER BY sh.created_at DESC LIMIT 50";
 $stmt = $db->prepare($query);
@@ -189,7 +196,7 @@ $attendance_report = $stmt->fetch();
             </div>
             <div class="counter_no">
                 <div>
-                    <p class="total_no"><?php echo number_format($attendance_report['total_hours_worked'], 1); ?></p>
+                    <p class="total_no"><?php echo $attendance_report['total_hours_worked'] !== null ? number_format((float)$attendance_report['total_hours_worked'], 1) : '0.0'; ?></p>
                     <p class="head_couter">Hours Worked</p>
                 </div>
             </div>
@@ -331,7 +338,20 @@ $attendance_report = $stmt->fetch();
                                                 <td><?php echo $movement['quantity']; ?></td>
                                                 <td><?php echo $movement['previous_stock']; ?></td>
                                                 <td><?php echo $movement['new_stock']; ?></td>
-                                                <td><?php echo $movement['first_name'] . ' ' . $movement['last_name']; ?></td>
+                                                <td>
+                                                    <?php 
+                                                    if (!empty($movement['customer_name'])) {
+                                                        echo htmlspecialchars($movement['customer_name']);
+                                                        if (!empty($movement['customer_phone'])) {
+                                                            echo '<br><small class="text-muted">' . htmlspecialchars($movement['customer_phone']) . '</small>';
+                                                        }
+                                                    } else {
+                                                        echo !empty($movement['first_name']) ? 
+                                                            htmlspecialchars($movement['first_name'] . ' ' . $movement['last_name']) : 
+                                                            'System';
+                                                    }
+                                                    ?>
+                                                </td>
                                                 <td><?php echo $movement['notes'] ?: 'N/A'; ?></td>
                                             </tr>
                                         <?php endforeach; ?>

@@ -34,11 +34,12 @@ if ($_POST) {
                 $error_message = 'No stock available for this item.';
             } else {
                 // Create allocation
-                $query = "INSERT INTO stock_allocations (item_id, user_id, allocated_quantity, remaining_quantity) VALUES (:item_id, :user_id, :quantity, :quantity)";
+                $query = "INSERT INTO stock_allocations (item_id, user_id, allocated_quantity, remaining_quantity, allocated_by) VALUES (:item_id, :user_id, :quantity, :quantity, :allocated_by)";
                 $stmt = $db->prepare($query);
                 $stmt->bindParam(':item_id', $item_id);
                 $stmt->bindParam(':user_id', $user_id_allocate);
                 $stmt->bindParam(':quantity', $quantity);
+                $stmt->bindParam(':allocated_by', $_SESSION['user_id']);
                 if ($stmt->execute()) {
                     // Update inventory
                     $new_stock = $current_stock - $quantity;

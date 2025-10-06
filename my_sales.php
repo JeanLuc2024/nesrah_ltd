@@ -4,14 +4,16 @@ require_once __DIR__ . '/includes/header.php';
 // Check if user is employee
 if (!isEmployee()) {
     redirect('dashboard.php');
-}
 
 // Get filter
 $filter = isset($_GET['filter']) ? $_GET['filter'] : 'all';
 $date_filter = isset($_GET['date_filter']) ? $_GET['date_filter'] : 'today';
 
+// Get current user ID
+$user_id = $_SESSION['user_id'] ?? 0;
+
 // Build query based on filters
-$where_clause = "WHERE s.user_id = :user_id";
+$where_clause = "WHERE s.created_by = :user_id";
 if ($date_filter === 'today') {
     $where_clause .= " AND DATE(s.created_at) = CURDATE()";
 } elseif ($date_filter === 'week') {
@@ -20,14 +22,21 @@ if ($date_filter === 'today') {
     $where_clause .= " AND s.created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)";
 }
 
-$query = "SELECT s.*, i.item_name, i.item_code
-          FROM sales s 
-          JOIN inventory i ON s.item_id = i.id 
-          $where_clause ORDER BY s.created_at DESC";
-$stmt = $db->prepare($query);
-$stmt->bindParam(':user_id', $user_id);
-$stmt->execute();
-$my_sales = $stmt->fetchAll();
+try {
+    $query = "SELECT s.*, i.item_name, i.item_code
+              FROM sales s 
+              JOIN inventory i ON s.item_id = i.id 
+              $where_clause 
+              ORDER BY s.created_at DESC";
+    $stmt = $db->prepare($query);
+    $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+    $stmt->execute();
+    $my_sales = $stmt->fetchAll();
+} catch (PDOException $e) {
+    error_log("Error in my_sales.php: " . $e->getMessage());
+    $my_sales = [];
+    $error_message = "Error loading sales data. Please try again later.";
+}
 
 // Get my sales statistics
 $query = "SELECT 

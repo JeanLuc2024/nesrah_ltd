@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 23, 2025 at 12:13 PM
+-- Generation Time: Oct 06, 2025 at 09:53 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -46,7 +46,10 @@ CREATE TABLE `attendance` (
 INSERT INTO `attendance` (`id`, `user_id`, `check_in`, `check_out`, `work_date`, `total_hours`, `status`, `notes`, `created_at`) VALUES
 (1, 2, '2025-09-21 18:23:09', NULL, '2025-09-21', 0.00, 'present', NULL, '2025-09-21 18:23:09'),
 (2, 2, '2025-09-22 09:52:08', '2025-09-22 09:52:12', '2025-09-22', 0.00, 'present', NULL, '2025-09-22 09:52:08'),
-(3, 3, '2025-09-23 09:46:08', NULL, '2025-09-23', 0.00, 'present', NULL, '2025-09-23 09:46:08');
+(3, 3, '2025-09-23 09:46:08', '2025-09-23 19:04:58', '2025-09-23', 9.31, 'present', NULL, '2025-09-23 09:46:08'),
+(4, 3, '2025-09-26 07:31:42', NULL, '2025-09-26', 0.00, 'present', NULL, '2025-09-26 07:31:42'),
+(5, 5, '2025-09-26 10:24:57', NULL, '2025-09-26', 0.00, 'present', NULL, '2025-09-26 10:24:57'),
+(6, 5, '2025-10-06 07:26:22', '2025-10-06 07:26:26', '2025-10-06', 0.00, 'present', NULL, '2025-10-06 07:26:22');
 
 -- --------------------------------------------------------
 
@@ -95,7 +98,9 @@ INSERT INTO `inventory` (`id`, `item_code`, `item_name`, `description`, `categor
 (5, 'ITM005', 'Pen Set', 'Set of 5 ballpoint pens', 'Stationery', 12.99, 150, 30, '2025-09-21 13:20:52', '2025-09-21 13:20:52'),
 (6, 'ITM8409', 'Rice', 'Pakistan rice', 'Food', 1000.00, 500, 0, '2025-09-21 18:00:45', '2025-09-21 18:00:45'),
 (7, 'ITM3821', 'ibirayi', 'fhsdhfsdakfsdajghjfas', 'Ibikoreshoooo', 5000.00, 1820, 10, '2025-09-22 09:55:47', '2025-09-23 09:55:03'),
-(8, 'ITM1488', 'dfsdfsdfs', 'jrnertnerjterter', 'hhhhhhh', 1000.00, 10, 2, '2025-09-23 08:35:58', '2025-09-23 09:57:38');
+(8, 'ITM1488', 'dfsdfsdfs', 'jrnertnerjterter', 'hhhhhhh', 1000.00, 10, 2, '2025-09-23 08:35:58', '2025-09-23 09:57:38'),
+(9, 'ITM4048', 'Ibiraha', 'Ibiraha birimo urusenda', 'Food', 100.00, 360, 30, '2025-09-26 07:14:37', '2025-09-26 07:17:14'),
+(10, 'ITM2772', 'milk', 'Amata y&#039;inyange', 'Food', 500.00, 90, 10, '2025-10-06 07:04:52', '2025-10-06 07:46:18');
 
 -- --------------------------------------------------------
 
@@ -125,7 +130,9 @@ CREATE TABLE `sales` (
 
 INSERT INTO `sales` (`id`, `user_id`, `item_id`, `customer_name`, `customer_phone`, `customer_email`, `quantity`, `unit_price`, `total_amount`, `payment_method`, `payment_status`, `notes`, `created_at`) VALUES
 (1, 2, 7, 'king david', '0788907645', 'kingdavid@gmail.com', 20, 5000.00, 100000.00, 'cash', 'paid', 'thank you', '2025-09-22 10:52:17'),
-(2, 3, 8, 'Hozanna', '0788487100', 'hozanna@gmail.com', 2, 700.00, 1400.00, 'bank_transfer', 'paid', 'delivered to shalom school', '2025-09-23 10:02:54');
+(2, 3, 8, 'Hozanna', '0788487100', 'hozanna@gmail.com', 2, 700.00, 1400.00, 'bank_transfer', 'paid', 'delivered to shalom school', '2025-09-23 10:02:54'),
+(3, 3, 9, 'WISDOM SCHOOL LTD', '0788605734', '', 139, 150.00, 20850.00, 'bank_transfer', 'paid', '', '2025-09-26 07:34:15'),
+(4, 1, 10, 'malik', '0788605734', 'malik@gmail.com', 2, 500.00, 1000.00, 'credit', 'pending', 'atwaye amata y&#039;inyange', '2025-10-06 07:08:14');
 
 -- --------------------------------------------------------
 
@@ -151,7 +158,9 @@ CREATE TABLE `stock_allocations` (
 
 INSERT INTO `stock_allocations` (`id`, `item_id`, `user_id`, `allocated_quantity`, `remaining_quantity`, `status`, `allocated_by`, `allocated_at`, `completed_at`) VALUES
 (1, 7, 2, 50, 30, 'completed', 1, '2025-09-22 09:59:12', '2025-09-23 08:39:06'),
-(2, 8, 3, 10, 8, 'active', 1, '2025-09-23 09:57:38', NULL);
+(2, 8, 3, 10, 8, 'active', 1, '2025-09-23 09:57:38', NULL),
+(3, 9, 3, 140, 1, 'active', 1, '2025-09-26 07:17:14', NULL),
+(6, 10, 5, 8, 8, 'active', 1, '2025-10-06 07:46:18', NULL);
 
 -- --------------------------------------------------------
 
@@ -184,7 +193,12 @@ INSERT INTO `stock_history` (`id`, `item_id`, `movement_type`, `quantity`, `prev
 (5, 7, 'in', 100, 50, 150, NULL, '', 1, '2025-09-23 09:53:58'),
 (6, 7, 'in', 800, 500, 1300, NULL, '', 1, '2025-09-23 09:54:28'),
 (7, 7, 'in', 920, 900, 1820, NULL, '', 1, '2025-09-23 09:55:03'),
-(8, 8, 'allocation', 10, 20, 10, NULL, 'Stock allocated from approved request', 1, '2025-09-23 09:57:38');
+(8, 8, 'allocation', 10, 20, 10, NULL, 'Stock allocated from approved request', 1, '2025-09-23 09:57:38'),
+(9, 9, 'in', 500, 0, 500, NULL, 'Initial stock', 1, '2025-09-26 07:14:37'),
+(10, 9, 'allocation', 140, 500, 360, NULL, 'Stock allocated to employee', 1, '2025-09-26 07:17:14'),
+(11, 10, 'in', 100, 0, 100, NULL, 'Initial stock', 1, '2025-10-06 07:04:52'),
+(12, 10, 'sale', 2, 100, 98, NULL, 'atwaye amata y&#039;inyange', 1, '2025-10-06 07:08:14'),
+(13, 10, 'allocation', 8, 98, 90, NULL, 'Stock allocated to employee', 1, '2025-10-06 07:46:18');
 
 -- --------------------------------------------------------
 
@@ -211,7 +225,9 @@ CREATE TABLE `stock_requests` (
 
 INSERT INTO `stock_requests` (`id`, `item_id`, `user_id`, `requested_quantity`, `reason`, `status`, `reviewed_by`, `reviewed_at`, `admin_notes`, `created_at`) VALUES
 (1, 2, 2, 500, 'zashize', 'rejected', 1, '2025-09-23 09:27:22', 'the stock is tooo many', '2025-09-21 18:55:08'),
-(2, 8, 3, 10, 'I want to supply to Lanari', 'approved', 1, '2025-09-23 09:57:38', 'okay ntaribi uyikoreshe neza', '2025-09-23 09:46:46');
+(2, 8, 3, 10, 'I want to supply to Lanari', 'approved', 1, '2025-09-23 09:57:38', 'okay ntaribi uyikoreshe neza', '2025-09-23 09:46:46'),
+(3, 9, 3, 20, '20 more are needed kugira bigere kubanyeshuri bose', 'pending', NULL, NULL, NULL, '2025-09-26 07:33:17'),
+(4, 10, 5, 8, 'kujyana kuri pipinierre', 'pending', NULL, NULL, NULL, '2025-10-06 07:26:58');
 
 -- --------------------------------------------------------
 
@@ -265,7 +281,8 @@ CREATE TABLE `tasks` (
 
 INSERT INTO `tasks` (`id`, `title`, `description`, `assigned_to`, `assigned_by`, `priority`, `status`, `due_date`, `completed_at`, `created_at`, `updated_at`) VALUES
 (1, 'uuuuuauaaaaaaaaahhhhhhhhhh', 'come tomorrow in the office', 2, 1, 'urgent', 'completed', '2025-09-23', '2025-09-23 09:27:39', '2025-09-22 10:01:38', '2025-09-23 09:27:39'),
-(2, 'kugurisha kugihe', 'uyu munsi dushaka ko ugurisha byinshi cyane koko', 3, 1, 'urgent', 'in_progress', '2025-09-23', NULL, '2025-09-23 09:58:18', '2025-09-23 10:01:13');
+(2, 'kugurisha kugihe', 'uyu munsi dushaka ko ugurisha byinshi cyane koko', 3, 1, 'urgent', 'completed', '2025-09-23', '2025-09-23 19:04:09', '2025-09-23 09:58:18', '2025-09-23 19:04:09'),
+(3, 'Kugemura ibiraha kuri WISDOM', 'Nugera kuri gate y&#039;ikigo ubwire umu security amvugishe', 3, 1, 'high', 'in_progress', '2025-09-26', NULL, '2025-09-26 07:18:29', '2025-09-26 07:32:03');
 
 -- --------------------------------------------------------
 
@@ -294,9 +311,11 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `username`, `email`, `password`, `plain_password`, `first_name`, `last_name`, `phone`, `address`, `role`, `status`, `created_at`, `updated_at`) VALUES
-(1, 'admin', '', '$2y$10$xqyiGG1yG03qZygVpuhdh.fxtTmEoZB8rDoBtqCR3uHq.aqSMgTHW', 'admin123', '', '', '', '', 'admin', 'active', '2025-09-21 13:20:52', '2025-09-23 07:58:33'),
-(2, 'prince', 'prince@gmail.com', '$2y$10$8G2R/0NjgijKo2inIase8OtHdbWUmCxgwBAIGs7omYyjQBVXcQMvi', 'prince123', 'ishimwe', 'prince', '0790635888', '', 'employee', 'active', '2025-09-21 18:20:05', '2025-09-23 07:06:19'),
-(3, 'haranira', 'haranira@gmail.com', '$2y$10$0JlnL3uTb6Q3eX7ET1iQKOlxGHPedGL9tGptUAlkYLD0R/uocD82O', NULL, 'izabayoo', 'haranira', '0790635888', '', 'employee', 'active', '2025-09-23 09:41:39', '2025-09-23 09:49:08');
+(1, 'admin', '', '$2y$10$fXYWqDVSIs2eklPVClDFk.w/0w008EiAUE9L/WwJTsTTsgdxo6BMy', 'admin123', '', '', '', '', 'admin', 'active', '2025-09-21 13:20:52', '2025-10-06 07:18:51'),
+(2, 'prince', 'prince@gmail.com', '$2y$10$8G2R/0NjgijKo2inIase8OtHdbWUmCxgwBAIGs7omYyjQBVXcQMvi', 'prince123', 'ishimwe', 'prince', '0790635888', '', 'employee', 'active', '2025-09-21 18:20:05', '2025-09-26 07:13:47'),
+(3, 'haranira', 'haranira@gmail.com', '$2y$10$0JlnL3uTb6Q3eX7ET1iQKOlxGHPedGL9tGptUAlkYLD0R/uocD82O', NULL, 'izabayoooo', 'haranira', '0790635888', '', 'employee', 'active', '2025-09-23 09:41:39', '2025-09-26 10:11:51'),
+(4, 'masonga', 'masonga@gmail.com', '$2y$10$YPL.gAvgsM1QYz09rDRMZe7GnmJ2uKXGaTs7ebqkvVUNQ8t1BGHuG', NULL, 'masonga', 'prince', '0788487100', 'musanze-kalisimbi', 'employee', 'active', '2025-09-26 10:13:32', '2025-09-26 10:13:32'),
+(5, 'yoram', 'irutabyose@gmail.com', '$2y$10$b.ruk84VzTLr2wnANcKNg.ZfubAvBlXQf44iL0GvdO/k/opEOdx2a', NULL, 'irutabyosee', 'yoramm', '0790635888', '', 'employee', 'active', '2025-09-26 10:24:09', '2025-10-06 07:04:05');
 
 --
 -- Indexes for dumped tables
@@ -389,7 +408,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `attendance`
 --
 ALTER TABLE `attendance`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `employee_communications`
@@ -401,31 +420,31 @@ ALTER TABLE `employee_communications`
 -- AUTO_INCREMENT for table `inventory`
 --
 ALTER TABLE `inventory`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `sales`
 --
 ALTER TABLE `sales`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `stock_allocations`
 --
 ALTER TABLE `stock_allocations`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `stock_history`
 --
 ALTER TABLE `stock_history`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `stock_requests`
 --
 ALTER TABLE `stock_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `system_settings`
@@ -437,13 +456,13 @@ ALTER TABLE `system_settings`
 -- AUTO_INCREMENT for table `tasks`
 --
 ALTER TABLE `tasks`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- Constraints for dumped tables

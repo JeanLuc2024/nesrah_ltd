@@ -104,20 +104,21 @@ if ($_POST) {
                     $error_message = 'Failed to update stock.';
                 }
             }
+        }
     } elseif ($action === 'delete_item') {
         $item_id = intval($_POST['item_id']);
         $notes = sanitizeInput($_POST['notes']);
-        
+
         // Get item details before deletion
         $query = "SELECT item_name, current_stock FROM inventory WHERE id = :item_id";
         $stmt = $db->prepare($query);
         $stmt->bindParam(':item_id', $item_id);
         $stmt->execute();
         $item = $stmt->fetch();
-        
+
         if ($item) {
             // Record stock history before deletion
-            $history_query = "INSERT INTO stock_history (item_id, movement_type, quantity, previous_stock, new_stock, created_by, notes) 
+            $history_query = "INSERT INTO stock_history (item_id, movement_type, quantity, previous_stock, new_stock, created_by, notes)
                              VALUES (:item_id, 'out', :quantity, :previous_stock, 0, :created_by, :notes)";
             $history_stmt = $db->prepare($history_query);
             $history_stmt->bindParam(':item_id', $item_id);
@@ -126,12 +127,12 @@ if ($_POST) {
             $history_stmt->bindParam(':created_by', $user_id);
             $history_stmt->bindParam(':notes', $notes);
             $history_stmt->execute();
-            
+
             // Delete the item
             $query = "DELETE FROM inventory WHERE id = :item_id";
             $stmt = $db->prepare($query);
             $stmt->bindParam(':item_id', $item_id);
-            
+
             if ($stmt->execute()) {
                 $success_message = 'Item "' . $item['item_name'] . '" has been deleted successfully.';
             } else {
@@ -140,13 +141,14 @@ if ($_POST) {
         } else {
             $error_message = 'Item not found.';
         }
+    }
+}
 
 // Get inventory items
 $query = "SELECT * FROM inventory ORDER BY created_at DESC";
 $stmt = $db->prepare($query);
 $stmt->execute();
 $items = $stmt->fetchAll();
-
 // Get low stock items
 $query = "SELECT * FROM inventory WHERE current_stock <= reorder_level ORDER BY current_stock ASC";
 $stmt = $db->prepare($query);
