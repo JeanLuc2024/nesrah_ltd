@@ -200,6 +200,7 @@ if ($_POST) {
                     $query = "INSERT INTO order_items (
                                 order_id,
                                 item_id,
+                                manual_item_name,
                                 quantity,
                                 unit_price,
                                 total_price,
@@ -207,6 +208,7 @@ if ($_POST) {
                               ) VALUES (
                                 :order_id,
                                 :item_id,
+                                :manual_item_name,
                                 :quantity,
                                 :unit_price,
                                 :total_price,
@@ -218,11 +220,13 @@ if ($_POST) {
                     $stmt = $db->prepare($query);
                     $stmt->bindParam(':order_id', $order_id, PDO::PARAM_INT);
 
-                    // For manual items, use NULL for item_id, otherwise use the actual item_id
+                    // For manual items, use NULL for item_id and set manual_item_name
                     if ($item['is_manual_item']) {
                         $stmt->bindValue(':item_id', null, PDO::PARAM_NULL);
+                        $stmt->bindParam(':manual_item_name', $item['manual_item_name'], PDO::PARAM_STR);
                     } else {
                         $stmt->bindParam(':item_id', $item['item_id'], PDO::PARAM_INT);
+                        $stmt->bindValue(':manual_item_name', null, PDO::PARAM_NULL);
                     }
 
                     $stmt->bindParam(':quantity', $item['quantity'], PDO::PARAM_INT);
@@ -369,9 +373,9 @@ $inventory_items = $stmt->fetchAll();
 if ($user_role === 'admin') {
     // Admins can see all orders
     $query = "SELECT o.*, u.first_name, u.last_name,
-                     (SELECT GROUP_CONCAT(CONCAT(oi.quantity, 'x ', i.item_name) SEPARATOR ', ')
+                     (SELECT GROUP_CONCAT(CONCAT(oi.quantity, 'x ', COALESCE(i.item_name, oi.manual_item_name)) SEPARATOR ', ')
                       FROM order_items oi
-                      JOIN inventory i ON oi.item_id = i.id
+                      LEFT JOIN inventory i ON oi.item_id = i.id
                       WHERE oi.order_id = o.id) as order_items
               FROM orders o
               LEFT JOIN users u ON o.user_id = u.id
@@ -383,9 +387,9 @@ if ($user_role === 'admin') {
 } else {
     // Employees can only see their own orders
     $query = "SELECT o.*, u.first_name, u.last_name,
-                     (SELECT GROUP_CONCAT(CONCAT(oi.quantity, 'x ', i.item_name) SEPARATOR ', ')
+                     (SELECT GROUP_CONCAT(CONCAT(oi.quantity, 'x ', COALESCE(i.item_name, oi.manual_item_name)) SEPARATOR ', ')
                       FROM order_items oi
-                      JOIN inventory i ON oi.item_id = i.id
+                      LEFT JOIN inventory i ON oi.item_id = i.id
                       WHERE oi.order_id = o.id) as order_items
               FROM orders o
               LEFT JOIN users u ON o.user_id = u.id
@@ -487,22 +491,28 @@ if ($user_role === 'admin') {
                                             <div class="col-md-3">
                                                 <div class="form-group">
                                                     <label class="form-label">Item <span class="text-danger">*</span></label>
-                                                    <select class="form-select item-select" name="items[0][item_id]" required>
-                                                        <option value="">Select an item</option>
-                                                        <option value="add_new" style="font-weight: bold; color: #007bff;">➕ Add New Item</option>
-                                                        <?php foreach ($inventory_items as $item): ?>
-                                                            <option value="<?php echo $item['id']; ?>"
-                                                                    data-price="<?php echo $item['unit_price']; ?>"
-                                                                    data-stock="<?php echo $item['current_stock']; ?>">
-                                                                <?php echo htmlspecialchars(sprintf(
-                                                                    '%s (%s) - Available: %d',
-                                                                    $item['item_name'],
-                                                                    $item['item_code'],
-                                                                    $item['current_stock']
-                                                                )); ?>
-                                                            </option>
-                                                        <?php endforeach; ?>
-                                                    </select>
+                                                    <div class="input-group">
+                                                        <select class="form-select item-select" name="items[0][item_id]" required style="display: block;">
+                                                            <option value="">Select an item</option>
+                                                            <option value="add_new" style="font-weight: bold; color: #007bff;">➕ Add New Item</option>
+                                                            <?php foreach ($inventory_items as $item): ?>
+                                                                <option value="<?php echo $item['id']; ?>"
+                                                                        data-price="<?php echo $item['unit_price']; ?>"
+                                                                        data-stock="<?php echo $item['current_stock']; ?>">
+                                                                    <?php echo htmlspecialchars(sprintf(
+                                                                        '%s (%s) - Available: %d',
+                                                                        $item['item_name'],
+                                                                        $item['item_code'],
+                                                                        $item['current_stock']
+                                                                    )); ?>
+                                                                </option>
+                                                            <?php endforeach; ?>
+                                                        </select>
+                                                        <input type="text" class="form-control manual-item-input" name="items[0][manual_item_name]" placeholder="Enter item name manually" style="display: none;">
+                                                        <button type="button" class="btn btn-outline-secondary switch-to-dropdown" style="display: none;" onclick="switchToDropdown(this)">
+                                                            <i class="fa fa-list"></i>
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div class="col-md-2">
@@ -777,8 +787,11 @@ function updateTotal() {
     document.querySelectorAll('.item-row:not([style*="display: none"])').forEach(row => {
         total += calculateRowTotal(row);
     });
-    
-    document.getElementById('total-amount').value = formatCurrency(total);
+
+    const totalAmountInput = document.getElementById('total_amount');
+    if (totalAmountInput) {
+        totalAmountInput.value = formatCurrency(total);
+    }
 }
 
 // Add new item row
@@ -796,13 +809,30 @@ document.getElementById('add-item-btn').addEventListener('click', function() {
         el.name = el.name.replace(/\[\d+\]/, `[${newIndex}]`);
     });
 
-    // Clear values
-    newRow.querySelector('.item-select').value = '';
-    newRow.querySelector('.manual-item-input').value = '';
-    newRow.querySelector('.quantity').value = '1';
-    newRow.querySelector('.unit-price').value = '';
-    newRow.querySelector('.item-total').value = '';
-    newRow.querySelector('[name*="notes"]').value = '';
+    // Clear values and reset display states
+    const itemSelect = newRow.querySelector('.item-select');
+    const manualInput = newRow.querySelector('.manual-item-input');
+    const switchBtn = newRow.querySelector('.switch-to-dropdown');
+    const quantityInput = newRow.querySelector('.quantity');
+    const unitPriceInput = newRow.querySelector('.unit-price');
+    const itemTotalInput = newRow.querySelector('.item-total');
+    const notesInput = newRow.querySelector('[name*="notes"]');
+
+    if (itemSelect) {
+        itemSelect.value = '';
+        itemSelect.style.display = 'block';
+    }
+    if (manualInput) {
+        manualInput.value = '';
+        manualInput.style.display = 'none';
+    }
+    if (switchBtn) {
+        switchBtn.style.display = 'none';
+    }
+    if (quantityInput) quantityInput.value = '1';
+    if (unitPriceInput) unitPriceInput.value = '';
+    if (itemTotalInput) itemTotalInput.value = '';
+    if (notesInput) notesInput.value = '';
 
     // Insert before the template
     template.parentNode.insertBefore(newRow, template);
@@ -810,8 +840,11 @@ document.getElementById('add-item-btn').addEventListener('click', function() {
     // Add event listeners to the new row
     addRowEventListeners(newRow);
 
+    // Enable remove buttons appropriately
+    updateRemoveButtons();
+
     // Focus on the new item select
-    newRow.querySelector('.item-select')?.focus();
+    if (itemSelect) itemSelect.focus();
 });
 
 // Add event listeners to a row
@@ -830,7 +863,7 @@ function addRowEventListeners(row) {
             } else if (this.value) {
                 const selectedOption = this.options[this.selectedIndex];
                 const defaultPrice = selectedOption.dataset.price;
-                if (defaultPrice && !unitPriceInput.value) {
+                if (defaultPrice && unitPriceInput && !unitPriceInput.value) {
                     unitPriceInput.value = defaultPrice;
                 }
             }
@@ -846,8 +879,20 @@ function addRowEventListeners(row) {
         removeBtn.addEventListener('click', function() {
             row.remove();
             updateTotal();
+            updateRemoveButtons();
         });
     }
+}
+
+// Function to update remove button states
+function updateRemoveButtons() {
+    const visibleRows = document.querySelectorAll('.item-row:not([style*="display: none"])');
+    visibleRows.forEach((row, index) => {
+        const removeBtn = row.querySelector('.remove-item');
+        if (removeBtn) {
+            removeBtn.disabled = index === 0; // Disable for first row
+        }
+    });
 }
 
 // Function to switch to manual input mode
@@ -912,7 +957,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.item-row:not([style*="display: none"])').forEach(row => {
         addRowEventListeners(row);
     });
-    
+
+    // Initialize remove button states
+    updateRemoveButtons();
+
     // Initial total calculation
     updateTotal();
 });

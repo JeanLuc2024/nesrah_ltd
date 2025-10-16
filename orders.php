@@ -19,25 +19,42 @@ if ($_POST) {
         $customer_name = sanitizeInput($_POST['customer_name'] ?? '');
         $customer_phone = sanitizeInput($_POST['customer_phone'] ?? '');
         $customer_email = sanitizeInput($_POST['customer_email'] ?? '');
-        $item_id = intval($_POST['item_id'] ?? 0);
-        $manual_item_name = sanitizeInput($_POST['manual_item_name'] ?? '');
-        $quantity = intval($_POST['quantity'] ?? 0);
-        $payment_method = $_POST['payment_method'] ?? 'credit';
-        $payment_status = $_POST['payment_status'] ?? 'pending';
+        $payment_method = $_POST['payment_method'] ?? 'cash';
+        $payment_status = $_POST['payment_status'] ?? 'paid';
         $notes = sanitizeInput($_POST['notes'] ?? '');
+
+        // Get items from the form
+        $items = $_POST['items'] ?? [];
 
         // Validation
         if (empty($customer_name)) {
             $validation_errors[] = 'Customer name is required.';
         }
 
-        // Check if either item_id is selected OR manual item name is provided
-        if ($item_id <= 0 && empty($manual_item_name)) {
-            $validation_errors[] = 'Please select an item from dropdown or enter item name manually.';
-        }
+        // Validate that we have at least one item
+        if (empty($items) || !is_array($items)) {
+            $validation_errors[] = 'Please add at least one item to the order.';
+        } else {
+            // Validate each item
+            foreach ($items as $index => $item) {
+                $item_id = intval($item['item_id'] ?? 0);
+                $manual_item_name = sanitizeInput($item['manual_item_name'] ?? '');
+                $quantity = intval($item['quantity'] ?? 0);
+                $unit_price = floatval($item['unit_price'] ?? 0);
 
-        if ($quantity <= 0) {
-            $validation_errors[] = 'Quantity must be greater than 0.';
+                // Check if either item_id is selected OR manual item name is provided
+                if ($item_id <= 0 && empty($manual_item_name)) {
+                    $validation_errors[] = 'Please select an item from dropdown or enter item name manually for item #' . ($index + 1);
+                }
+
+                if ($quantity <= 0) {
+                    $validation_errors[] = 'Quantity must be greater than 0 for item #' . ($index + 1);
+                }
+
+                if ($unit_price <= 0) {
+                    $validation_errors[] = 'Unit price must be greater than 0 for item #' . ($index + 1);
+                }
+            }
         }
 
         if (!in_array($payment_method, ['cash', 'card', 'bank_transfer', 'credit'])) {
@@ -51,200 +68,230 @@ if ($_POST) {
         // If no validation errors, proceed with database operations
         if (empty($validation_errors)) {
             try {
-                // If no validation errors, proceed with database operations
-                if (empty($validation_errors)) {
-                    try {
-                        // Start transaction
-                        $db->beginTransaction();
-        
-                        // Process each item in the order and calculate total
-                        $total_amount = 0;
-                        $order_items = [];
-        
-                        // First, validate all items and calculate total
-                        foreach ($items as $item) {
-                            $item_id = intval($item['item_id']);
-                            $quantity = intval($item['quantity']);
-                            $unit_price = floatval($item['unit_price']);
-        
-                            // Get item details from inventory
-                            $query = "SELECT i.id, i.unit_price as default_price, i.item_name, i.item_code, i.current_stock
-                                      FROM inventory i
-                                      WHERE i.id = :item_id";
-                            $stmt = $db->prepare($query);
-                            $stmt->bindParam(':item_id', $item_id, PDO::PARAM_INT);
-                            $stmt->execute();
-        
-                            if ($stmt->rowCount() === 0) {
-                                throw new Exception('Item not found: ' . $item['item_name']);
-                            }
-        
-                            $item_data = $stmt->fetch();
-        
-                            // Check if there's enough stock in inventory
-                            if ($item_data['current_stock'] < $quantity) {
-                                throw new Exception('Insufficient stock for ' . $item_data['item_name'] . '. Available: ' . $item_data['current_stock']);
-                            }
-        
-                            $item_total = $unit_price * $quantity;
-                            $total_amount += $item_total;
-        
-                            // Store item data for processing after validation
-                            $order_items[] = [
-                                'item_id' => $item_id,
-                                'quantity' => $quantity,
-                                'unit_price' => $unit_price,
-                                'item_name' => $item_data['item_name'],
-                                'item_code' => $item_data['item_code'],
-                                'current_stock' => $item_data['current_stock'],
-                                'new_stock' => $item_data['current_stock'] - $quantity
-                            ];
-                        }
-        
-                        // Insert the main order record
-                        $query = "INSERT INTO orders (
-                                    user_id,
-                                    customer_name,
-                                    customer_phone,
-                                    customer_email,
-                                    total_amount,
-                                    payment_method,
-                                    payment_status,
-                                    notes,
-                                    created_at
-                                  ) VALUES (
-                                    :user_id,
-                                    :customer_name,
-                                    :customer_phone,
-                                    :customer_email,
-                                    :total_amount,
-                                    :payment_method,
-                                    :payment_status,
-                                    :notes,
-                                    NOW()
-                                  )";
-        
+                // Start transaction
+                $db->beginTransaction();
+
+                // Process each item in the order and calculate total
+                $total_amount = 0;
+                $order_items = [];
+
+                // First, validate all items and calculate total
+                foreach ($items as $item) {
+                    $item_id = intval($item['item_id']);
+                    $manual_item_name = sanitizeInput($item['manual_item_name'] ?? '');
+                    $quantity = intval($item['quantity']);
+                    $unit_price = floatval($item['unit_price']);
+
+                    $item_data = null;
+                    $is_manual_item = false;
+
+                    if ($item_id > 0) {
+                        // Regular inventory item
+                        $query = "SELECT i.id, i.unit_price as default_price, i.item_name, i.item_code, i.current_stock
+                                  FROM inventory i
+                                  WHERE i.id = :item_id";
                         $stmt = $db->prepare($query);
+                        $stmt->bindParam(':item_id', $item_id, PDO::PARAM_INT);
+                        $stmt->execute();
+
+                        if ($stmt->rowCount() === 0) {
+                            throw new Exception('Item not found: ' . $item['item_name']);
+                        }
+
+                        $item_data = $stmt->fetch();
+
+                        // Check if there's enough stock in inventory
+                        if ($item_data['current_stock'] < $quantity) {
+                            throw new Exception('Insufficient stock for ' . $item_data['item_name'] . '. Available: ' . $item_data['current_stock']);
+                        }
+                    } elseif (!empty($manual_item_name)) {
+                        // Manual item entry (customer requested item)
+                        $is_manual_item = true;
+                        $item_data = [
+                            'id' => null, // No inventory ID for manual items
+                            'item_name' => $manual_item_name,
+                            'item_code' => 'MANUAL-' . time() . '-' . rand(100, 999),
+                            'current_stock' => 0,
+                            'unit_price' => $unit_price
+                        ];
+                    } else {
+                        throw new Exception('Invalid item data for order processing');
+                    }
+
+                    $item_total = $unit_price * $quantity;
+                    $total_amount += $item_total;
+
+                    // Store item data for processing after validation
+                    $order_items[] = [
+                        'item_id' => $item_id,
+                        'manual_item_name' => $manual_item_name,
+                        'is_manual_item' => $is_manual_item,
+                        'quantity' => $quantity,
+                        'unit_price' => $unit_price,
+                        'item_name' => $item_data['item_name'],
+                        'item_code' => $item_data['item_code'],
+                        'current_stock' => $item_data['current_stock'],
+                        'new_stock' => (!$is_manual_item) ? $item_data['current_stock'] - $quantity : 0
+                    ];
+                }
+
+                // Insert the main order record
+                $query = "INSERT INTO orders (
+                            user_id,
+                            customer_name,
+                            customer_phone,
+                            customer_email,
+                            total_amount,
+                            payment_method,
+                            payment_status,
+                            notes,
+                            created_at
+                          ) VALUES (
+                            :user_id,
+                            :customer_name,
+                            :customer_phone,
+                            :customer_email,
+                            :total_amount,
+                            :payment_method,
+                            :payment_status,
+                            :notes,
+                            NOW()
+                          )";
+
+                $stmt = $db->prepare($query);
+                $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+                $stmt->bindParam(':customer_name', $customer_name, PDO::PARAM_STR);
+                $stmt->bindParam(':customer_phone', $customer_phone, PDO::PARAM_STR);
+                $stmt->bindParam(':customer_email', $customer_email, PDO::PARAM_STR);
+                $stmt->bindParam(':total_amount', $total_amount, PDO::PARAM_STR);
+                $stmt->bindParam(':payment_method', $payment_method, PDO::PARAM_STR);
+                $stmt->bindParam(':payment_status', $payment_status, PDO::PARAM_STR);
+                $stmt->bindParam(':notes', $notes, PDO::PARAM_STR);
+
+                if (!$stmt->execute()) {
+                    throw new Exception('Failed to create order');
+                }
+
+                $order_id = $db->lastInsertId();
+
+                // Process each item in the order
+                foreach ($order_items as $item) {
+                    // Insert order item
+                    $query = "INSERT INTO order_items (
+                                order_id,
+                                item_id,
+                                manual_item_name,
+                                quantity,
+                                unit_price,
+                                total_price,
+                                created_at
+                              ) VALUES (
+                                :order_id,
+                                :item_id,
+                                :manual_item_name,
+                                :quantity,
+                                :unit_price,
+                                :total_price,
+                                NOW()
+                              )";
+
+                    $item_total = $item['unit_price'] * $item['quantity'];
+
+                    $stmt = $db->prepare($query);
+                    $stmt->bindParam(':order_id', $order_id, PDO::PARAM_INT);
+
+                    // For manual items, use NULL for item_id and set manual_item_name
+                    if ($item['is_manual_item']) {
+                        $stmt->bindValue(':item_id', null, PDO::PARAM_NULL);
+                        $stmt->bindParam(':manual_item_name', $item['manual_item_name'], PDO::PARAM_STR);
+                    } else {
+                        $stmt->bindParam(':item_id', $item['item_id'], PDO::PARAM_INT);
+                        $stmt->bindValue(':manual_item_name', null, PDO::PARAM_NULL);
+                    }
+
+                    $stmt->bindParam(':quantity', $item['quantity'], PDO::PARAM_INT);
+                    $stmt->bindParam(':unit_price', $item['unit_price'], PDO::PARAM_STR);
+                    $stmt->bindParam(':total_price', $item_total, PDO::PARAM_STR);
+
+                    if (!$stmt->execute()) {
+                        throw new Exception('Failed to add item to order');
+                    }
+
+                    // Update inventory for this item (only for regular inventory items)
+                    if (!$item['is_manual_item']) {
+                        $query = "UPDATE inventory
+                                  SET current_stock = current_stock - :quantity
+                                  WHERE id = :item_id
+                                  AND current_stock >= :quantity";
+                        $stmt = $db->prepare($query);
+                        $stmt->bindParam(':item_id', $item['item_id'], PDO::PARAM_INT);
+                        $stmt->bindParam(':quantity', $item['quantity'], PDO::PARAM_INT);
+                        $stmt->execute();
+
+                        if ($stmt->rowCount() === 0) {
+                            throw new Exception('Inventory update failed for ' . $item['item_name'] . '. The item stock may have been modified by another user.');
+                        }
+
+                        // Record stock history
+                        $query = "INSERT INTO stock_history (
+                                    item_id,
+                                    movement_type,
+                                    quantity,
+                                    previous_stock,
+                                    new_stock,
+                                    reference_id,
+                                    created_by,
+                                    notes
+                                  ) VALUES (
+                                    :item_id,
+                                    'sale',
+                                    :quantity,
+                                    :previous_stock,
+                                    :new_stock,
+                                    :sale_id,
+                                    :user_id,
+                                    :notes
+                                  )";
+
+                        $previous_stock = $item['current_stock'];
+                        $new_stock = $item['new_stock'];
+
+                        // Prepare notes for stock history
+                        $notes = "Sold to: $customer_name" . ($customer_phone ? " ($customer_phone)" : '');
+
+                        $stmt = $db->prepare($query);
+                        $stmt->bindParam(':item_id', $item['item_id'], PDO::PARAM_INT);
+                        $stmt->bindParam(':quantity', $item['quantity'], PDO::PARAM_INT);
+                        $stmt->bindParam(':previous_stock', $previous_stock, PDO::PARAM_INT);
+                        $stmt->bindParam(':new_stock', $new_stock, PDO::PARAM_INT);
+                        $stmt->bindParam(':sale_id', $order_id, PDO::PARAM_INT);
                         $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
-                        $stmt->bindParam(':customer_name', $customer_name, PDO::PARAM_STR);
-                        $stmt->bindParam(':customer_phone', $customer_phone, PDO::PARAM_STR);
-                        $stmt->bindParam(':customer_email', $customer_email, PDO::PARAM_STR);
-                        $stmt->bindParam(':total_amount', $total_amount, PDO::PARAM_STR);
-                        $stmt->bindParam(':payment_method', $payment_method, PDO::PARAM_STR);
-                        $stmt->bindParam(':payment_status', $payment_status, PDO::PARAM_STR);
-                        $stmt->bindParam(':notes', $notes, PDO::PARAM_STR);
-        
+                        $stmt->bindValue(':notes', $notes, PDO::PARAM_STR);
+
                         if (!$stmt->execute()) {
-                            throw new Exception('Failed to create order');
+                            throw new Exception('Failed to record stock history');
                         }
-        
-                        $order_id = $db->lastInsertId();
-        
-                        // Process each item in the order
-                        foreach ($order_items as $item) {
-                            // Insert order item
-                            $query = "INSERT INTO order_items (
-                                        order_id,
-                                        item_id,
-                                        quantity,
-                                        unit_price,
-                                        total_price,
-                                        created_at
-                                      ) VALUES (
-                                        :order_id,
-                                        :item_id,
-                                        :quantity,
-                                        :unit_price,
-                                        :total_price,
-                                        NOW()
-                                      )";
-        
-                            $item_total = $item['unit_price'] * $item['quantity'];
-        
-                            $stmt = $db->prepare($query);
-                            $stmt->bindParam(':order_id', $order_id, PDO::PARAM_INT);
-                            $stmt->bindParam(':item_id', $item['item_id'], PDO::PARAM_INT);
-                            $stmt->bindParam(':quantity', $item['quantity'], PDO::PARAM_INT);
-                            $stmt->bindParam(':unit_price', $item['unit_price'], PDO::PARAM_STR);
-                            $stmt->bindParam(':total_price', $item_total, PDO::PARAM_STR);
-        
-                            if (!$stmt->execute()) {
-                                throw new Exception('Failed to add item to order');
-                            }
-        
-                            // Update inventory for this item
-                            $query = "UPDATE inventory
-                                      SET current_stock = current_stock - :quantity
-                                      WHERE id = :item_id
-                                      AND current_stock >= :quantity";
-                            $stmt = $db->prepare($query);
-                            $stmt->bindParam(':item_id', $item['item_id'], PDO::PARAM_INT);
-                            $stmt->bindParam(':quantity', $item['quantity'], PDO::PARAM_INT);
-                            $stmt->execute();
-        
-                            if ($stmt->rowCount() === 0) {
-                                throw new Exception('Inventory update failed for ' . $item['item_name'] . '. The item stock may have been modified by another user.');
-                            }
-        
-                            // Record stock history
-                            $query = "INSERT INTO stock_history (
-                                        item_id,
-                                        movement_type,
-                                        quantity,
-                                        previous_stock,
-                                        new_stock,
-                                        reference_id,
-                                        created_by,
-                                        notes
-                                      ) VALUES (
-                                        :item_id,
-                                        'sale',
-                                        :quantity,
-                                        :previous_stock,
-                                        :new_stock,
-                                        :sale_id,
-                                        :user_id,
-                                        :notes
-                                      )";
-        
-                            $previous_stock = $item['current_stock'];
-                            $new_stock = $item['new_stock'];
-        
-                            // Prepare notes for stock history
-                            $notes = "Sold to: $customer_name" . ($customer_phone ? " ($customer_phone)" : '');
-        
-                            $stmt = $db->prepare($query);
-                            $stmt->bindParam(':item_id', $item['item_id'], PDO::PARAM_INT);
-                            $stmt->bindParam(':quantity', $item['quantity'], PDO::PARAM_INT);
-                            $stmt->bindParam(':previous_stock', $previous_stock, PDO::PARAM_INT);
-                            $stmt->bindParam(':new_stock', $new_stock, PDO::PARAM_INT);
-                            $stmt->bindParam(':sale_id', $order_id, PDO::PARAM_INT);
-                            $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
-                            $stmt->bindValue(':notes', $notes, PDO::PARAM_STR);
-        
-                            if (!$stmt->execute()) {
-                                throw new Exception('Failed to record stock history');
-                            }
-                        }
-        
-                        // If we got here, everything was successful
-                        $db->commit();
-        
-                        $success_message = 'Order for ' . $customer_name . ' has been recorded successfully! Total: ' . formatCurrency($total_amount);
-        
-                        // Clear POST data to prevent form repopulation
-                        $_POST = [];
-        
-                    } catch (Exception $e) {
-                        // Rollback transaction on error
-                        if ($db->inTransaction()) {
-                            $db->rollBack();
-                        }
-        
-                        $error_message = 'System error: Unable to record order. Please contact administrator.';
-                        error_log("Order recording error: " . $e->getMessage());
                     }
                 }
+
+                // If we got here, everything was successful
+                $db->commit();
+
+                $success_message = 'Order for ' . $customer_name . ' has been recorded successfully! Total: ' . formatCurrency($total_amount);
+
+                // Clear POST data to prevent form repopulation
+                $_POST = [];
+
+            } catch (Exception $e) {
+                // Rollback transaction on error
+                if ($db->inTransaction()) {
+                    $db->rollBack();
+                }
+
+                $error_message = 'System error: Unable to record order. Please contact administrator.';
+                error_log("Order recording error: " . $e->getMessage());
+            }
+        }
             } catch (Exception $e) {
                 $error_message = 'System error: Unable to record order. Please contact administrator.';
                 error_log("Order recording error: " . $e->getMessage());
@@ -264,11 +311,15 @@ $stmt = $db->prepare($query);
 $stmt->execute();
 $inventory_items = $stmt->fetchAll();
 
-// Get recent orders
-$query = "SELECT s.*, i.item_name, i.item_code
-          FROM sales s
-          JOIN inventory i ON s.item_id = i.id
-          ORDER BY s.created_at DESC LIMIT 10";
+// Get recent orders from orders table
+$query = "SELECT o.*, u.first_name, u.last_name,
+                 (SELECT GROUP_CONCAT(CONCAT(oi.quantity, 'x ', COALESCE(i.item_name, oi.manual_item_name)) SEPARATOR ', ')
+                  FROM order_items oi
+                  LEFT JOIN inventory i ON oi.item_id = i.id
+                  WHERE oi.order_id = o.id) as order_items
+          FROM orders o
+          LEFT JOIN users u ON o.user_id = u.id
+          ORDER BY o.created_at DESC LIMIT 10";
 $stmt = $db->prepare($query);
 $stmt->execute();
 $recent_orders = $stmt->fetchAll();
@@ -672,8 +723,7 @@ $order_stats = $stmt->fetch();
                                     <tr>
                                         <th>Order ID</th>
                                         <th>Customer</th>
-                                        <th>Item</th>
-                                        <th>Quantity</th>
+                                        <th>Items</th>
                                         <th>Total Amount</th>
                                         <th>Payment Method</th>
                                         <th>Status</th>
@@ -692,8 +742,7 @@ $order_stats = $stmt->fetch();
                                                         <br><small class="text-muted"><?php echo $order['customer_phone']; ?></small>
                                                     <?php endif; ?>
                                                 </td>
-                                                <td><?php echo $order['item_name'] . ' (' . $order['item_code'] . ')'; ?></td>
-                                                <td><?php echo $order['quantity']; ?></td>
+                                                <td><?php echo htmlspecialchars($order['order_items'] ?? 'N/A'); ?></td>
                                                 <td><?php echo formatCurrency($order['total_amount']); ?></td>
                                                 <td>
                                                     <span class="badge badge-<?php
@@ -726,7 +775,7 @@ $order_stats = $stmt->fetch();
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <tr>
-                                            <td colspan="9" class="text-center">No orders recorded yet</td>
+                                            <td colspan="8" class="text-center">No orders recorded yet</td>
                                         </tr>
                                     <?php endif; ?>
                                 </tbody>
@@ -863,6 +912,15 @@ document.getElementById('add-item-btn').addEventListener('click', function() {
 
     // Focus on the new item select
     newRow.querySelector('.item-select')?.focus();
+
+    // Enable remove button for all rows except the first one
+    const allVisibleRows = document.querySelectorAll('.item-row:not([style*="display: none"])');
+    allVisibleRows.forEach((row, index) => {
+        const removeBtn = row.querySelector('.remove-item');
+        if (removeBtn) {
+            removeBtn.disabled = index === 0; // Disable for first row
+        }
+    });
 });
 
 // Add event listeners to a row
@@ -897,6 +955,15 @@ function addRowEventListeners(row) {
         removeBtn.addEventListener('click', function() {
             row.remove();
             updateTotal();
+
+            // Re-enable remove buttons appropriately after removal
+            const allVisibleRows = document.querySelectorAll('.item-row:not([style*="display: none"])');
+            allVisibleRows.forEach((row, index) => {
+                const removeBtn = row.querySelector('.remove-item');
+                if (removeBtn) {
+                    removeBtn.disabled = index === 0; // Disable for first row
+                }
+            });
         });
     }
 }

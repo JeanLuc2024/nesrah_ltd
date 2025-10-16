@@ -458,7 +458,7 @@ function printSalesReport() {
         </body>
         </html>
     `;
-    
+
     // Write the content to the print window
     printWindow.document.open();
     printWindow.document.write(printContent);
