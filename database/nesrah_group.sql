@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 06, 2025 at 09:53 AM
+-- Generation Time: Oct 06, 2025 at 03:56 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -100,7 +100,59 @@ INSERT INTO `inventory` (`id`, `item_code`, `item_name`, `description`, `categor
 (7, 'ITM3821', 'ibirayi', 'fhsdhfsdakfsdajghjfas', 'Ibikoreshoooo', 5000.00, 1820, 10, '2025-09-22 09:55:47', '2025-09-23 09:55:03'),
 (8, 'ITM1488', 'dfsdfsdfs', 'jrnertnerjterter', 'hhhhhhh', 1000.00, 10, 2, '2025-09-23 08:35:58', '2025-09-23 09:57:38'),
 (9, 'ITM4048', 'Ibiraha', 'Ibiraha birimo urusenda', 'Food', 100.00, 360, 30, '2025-09-26 07:14:37', '2025-09-26 07:17:14'),
-(10, 'ITM2772', 'milk', 'Amata y&#039;inyange', 'Food', 500.00, 90, 10, '2025-10-06 07:04:52', '2025-10-06 07:46:18');
+(10, 'ITM2772', 'milk', 'Amata y&#039;inyange', 'Food', 500.00, 88, 10, '2025-10-06 07:04:52', '2025-10-06 10:01:29');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `orders`
+--
+
+CREATE TABLE `orders` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `customer_name` varchar(255) NOT NULL,
+  `customer_phone` varchar(50) DEFAULT NULL,
+  `customer_email` varchar(255) DEFAULT NULL,
+  `total_amount` decimal(10,2) NOT NULL,
+  `payment_method` varchar(50) NOT NULL DEFAULT 'cash',
+  `payment_status` varchar(50) NOT NULL DEFAULT 'pending',
+  `notes` text DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `orders`
+--
+
+INSERT INTO `orders` (`id`, `user_id`, `customer_name`, `customer_phone`, `customer_email`, `total_amount`, `payment_method`, `payment_status`, `notes`, `created_at`, `updated_at`) VALUES
+(1, 5, 'quan', '', '', 500.00, 'cash', 'pending', '', '2025-10-06 11:59:51', NULL),
+(2, 5, 'quan', '', '', 500.00, 'cash', 'pending', '', '2025-10-06 12:01:29', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `order_items`
+--
+
+CREATE TABLE `order_items` (
+  `id` int(11) NOT NULL,
+  `order_id` int(11) NOT NULL,
+  `item_id` int(11) NOT NULL,
+  `quantity` int(11) NOT NULL,
+  `unit_price` decimal(10,2) NOT NULL,
+  `total_price` decimal(10,2) NOT NULL,
+  `created_at` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `order_items`
+--
+
+INSERT INTO `order_items` (`id`, `order_id`, `item_id`, `quantity`, `unit_price`, `total_price`, `created_at`) VALUES
+(1, 1, 10, 1, 500.00, 500.00, '2025-10-06 11:59:51'),
+(2, 2, 10, 1, 500.00, 500.00, '2025-10-06 12:01:29');
 
 -- --------------------------------------------------------
 
@@ -132,7 +184,8 @@ INSERT INTO `sales` (`id`, `user_id`, `item_id`, `customer_name`, `customer_phon
 (1, 2, 7, 'king david', '0788907645', 'kingdavid@gmail.com', 20, 5000.00, 100000.00, 'cash', 'paid', 'thank you', '2025-09-22 10:52:17'),
 (2, 3, 8, 'Hozanna', '0788487100', 'hozanna@gmail.com', 2, 700.00, 1400.00, 'bank_transfer', 'paid', 'delivered to shalom school', '2025-09-23 10:02:54'),
 (3, 3, 9, 'WISDOM SCHOOL LTD', '0788605734', '', 139, 150.00, 20850.00, 'bank_transfer', 'paid', '', '2025-09-26 07:34:15'),
-(4, 1, 10, 'malik', '0788605734', 'malik@gmail.com', 2, 500.00, 1000.00, 'credit', 'pending', 'atwaye amata y&#039;inyange', '2025-10-06 07:08:14');
+(4, 1, 10, 'malik', '0788605734', 'malik@gmail.com', 2, 500.00, 1000.00, 'credit', 'pending', 'atwaye amata y&#039;inyange', '2025-10-06 07:08:14'),
+(6, 5, 10, 'luc', '', '', 6, 500.00, 3000.00, 'cash', 'paid', '', '2025-10-06 09:28:55');
 
 -- --------------------------------------------------------
 
@@ -160,7 +213,7 @@ INSERT INTO `stock_allocations` (`id`, `item_id`, `user_id`, `allocated_quantity
 (1, 7, 2, 50, 30, 'completed', 1, '2025-09-22 09:59:12', '2025-09-23 08:39:06'),
 (2, 8, 3, 10, 8, 'active', 1, '2025-09-23 09:57:38', NULL),
 (3, 9, 3, 140, 1, 'active', 1, '2025-09-26 07:17:14', NULL),
-(6, 10, 5, 8, 8, 'active', 1, '2025-10-06 07:46:18', NULL);
+(6, 10, 5, 8, 0, 'completed', 1, '2025-10-06 07:46:18', '2025-10-06 10:01:29');
 
 -- --------------------------------------------------------
 
@@ -198,7 +251,9 @@ INSERT INTO `stock_history` (`id`, `item_id`, `movement_type`, `quantity`, `prev
 (10, 9, 'allocation', 140, 500, 360, NULL, 'Stock allocated to employee', 1, '2025-09-26 07:17:14'),
 (11, 10, 'in', 100, 0, 100, NULL, 'Initial stock', 1, '2025-10-06 07:04:52'),
 (12, 10, 'sale', 2, 100, 98, NULL, 'atwaye amata y&#039;inyange', 1, '2025-10-06 07:08:14'),
-(13, 10, 'allocation', 8, 98, 90, NULL, 'Stock allocated to employee', 1, '2025-10-06 07:46:18');
+(13, 10, 'allocation', 8, 98, 90, NULL, 'Stock allocated to employee', 1, '2025-10-06 07:46:18'),
+(14, 10, 'sale', 1, 89, 88, 1, 'Sold to: quan', 5, '2025-10-06 09:59:51'),
+(15, 10, 'sale', 1, 88, 87, 2, 'Sold to: quan', 5, '2025-10-06 10:01:29');
 
 -- --------------------------------------------------------
 
@@ -227,7 +282,9 @@ INSERT INTO `stock_requests` (`id`, `item_id`, `user_id`, `requested_quantity`, 
 (1, 2, 2, 500, 'zashize', 'rejected', 1, '2025-09-23 09:27:22', 'the stock is tooo many', '2025-09-21 18:55:08'),
 (2, 8, 3, 10, 'I want to supply to Lanari', 'approved', 1, '2025-09-23 09:57:38', 'okay ntaribi uyikoreshe neza', '2025-09-23 09:46:46'),
 (3, 9, 3, 20, '20 more are needed kugira bigere kubanyeshuri bose', 'pending', NULL, NULL, NULL, '2025-09-26 07:33:17'),
-(4, 10, 5, 8, 'kujyana kuri pipinierre', 'pending', NULL, NULL, NULL, '2025-10-06 07:26:58');
+(4, 10, 5, 8, 'kujyana kuri pipinierre', 'pending', NULL, NULL, NULL, '2025-10-06 07:26:58'),
+(5, 3, 5, 50, 'nshaka izo kujyana kubigo byamashuri', 'pending', NULL, NULL, NULL, '2025-10-06 08:19:04'),
+(6, 10, 5, 8, 'the avaible are done', 'pending', NULL, NULL, NULL, '2025-10-06 10:05:26');
 
 -- --------------------------------------------------------
 
@@ -344,6 +401,22 @@ ALTER TABLE `inventory`
   ADD UNIQUE KEY `item_code` (`item_code`);
 
 --
+-- Indexes for table `orders`
+--
+ALTER TABLE `orders`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `created_at` (`created_at`);
+
+--
+-- Indexes for table `order_items`
+--
+ALTER TABLE `order_items`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `order_id` (`order_id`),
+  ADD KEY `item_id` (`item_id`);
+
+--
 -- Indexes for table `sales`
 --
 ALTER TABLE `sales`
@@ -423,10 +496,22 @@ ALTER TABLE `inventory`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
+-- AUTO_INCREMENT for table `orders`
+--
+ALTER TABLE `orders`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `order_items`
+--
+ALTER TABLE `order_items`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
 -- AUTO_INCREMENT for table `sales`
 --
 ALTER TABLE `sales`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `stock_allocations`
@@ -438,13 +523,13 @@ ALTER TABLE `stock_allocations`
 -- AUTO_INCREMENT for table `stock_history`
 --
 ALTER TABLE `stock_history`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `stock_requests`
 --
 ALTER TABLE `stock_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `system_settings`
@@ -480,6 +565,13 @@ ALTER TABLE `attendance`
 ALTER TABLE `employee_communications`
   ADD CONSTRAINT `employee_communications_ibfk_1` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `employee_communications_ibfk_2` FOREIGN KEY (`recipient_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `order_items`
+--
+ALTER TABLE `order_items`
+  ADD CONSTRAINT `order_items_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `order_items_ibfk_2` FOREIGN KEY (`item_id`) REFERENCES `inventory` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `sales`

@@ -39,12 +39,13 @@ $top_items = $stmt->fetchAll();
 
 // Employee Performance Report
 $query = "SELECT u.first_name, u.last_name, COUNT(s.id) as total_sales, SUM(s.total_amount) as total_revenue
-          FROM sales s 
-          JOIN users u ON s.user_id = u.id 
+          FROM sales s
+          JOIN users u ON s.user_id = u.id
           WHERE DATE(s.created_at) BETWEEN :start_date AND :end_date
-          GROUP BY s.user_id, u.first_name, u.last_name 
+          GROUP BY s.user_id, u.first_name, u.last_name
           ORDER BY total_revenue DESC";
 $stmt = $db->prepare($query);
+$stmt->bindParam(':start_date', $start_date);
 $stmt->bindParam(':end_date', $end_date);
 $stmt->execute();
 $employee_performance = $stmt->fetchAll();
@@ -61,7 +62,7 @@ $query = "SELECT
           FROM stock_history sh
           JOIN inventory i ON sh.item_id = i.id
           LEFT JOIN users u ON sh.created_by = u.id
-          LEFT JOIN sales s ON sh.reference_id = s.id AND sh.reference_type = 'sale'
+          LEFT JOIN sales s ON sh.reference_id = s.id
           WHERE DATE(sh.created_at) BETWEEN :start_date AND :end_date
           ORDER BY sh.created_at DESC LIMIT 50";
 $stmt = $db->prepare($query);

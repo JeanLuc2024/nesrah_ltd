@@ -1,0 +1,128 @@
+/* Print Styles */
+@media print {
+    /* Hide unnecessary elements */
+    .no-print, 
+    .sidebar, 
+    .topbar, 
+    .btn, 
+    .form-control, 
+    .form-group,
+    .navbar, 
+    .icon_info, 
+    .user_profile_dd, 
+    .footer,
+    .dataTables_length,
+    .dataTables_filter,
+    .dataTables_info,
+    .dataTables_paginate,
+    .action-buttons {
+        display: none !important;
+    }
+
+    /* Page setup */
+    @page {
+        size: auto;
+        margin: 15mm 10mm 15mm 10mm;
+    }
+
+    body {
+        font-family: Arial, sans-serif;
+        line-height: 1.4;
+        color: #000;
+        background: #fff;
+        padding: 0;
+        margin: 0;
+    }
+
+    /* Print header */
+    .print-header {
+        text-align: center;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #ddd;
+    }
+
+    .print-header h1 {
+        margin: 0 0 5px 0;
+        color: #333;
+        font-size: 24px;
+    }
+
+    .print-header .company-info {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 5px;
+    }
+
+    .print-header .report-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin: 10px 0;
+    }
+
+    .print-header .report-meta {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 10px;
+    }
+
+    /* Table styles */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+        font-size: 12px;
+    }
+
+    table, th, td {
+        border: 1px solid #ddd;
+    }
+
+    th, td {
+        padding: 8px;
+        text-align: left;
+    }
+
+    th {
+        background-color: #f5f5f5;
+        font-weight: bold;
+    }
+
+    /* Ensure tables don't break across pages */
+    table {
+        page-break-inside: auto;
+    }
+
+    tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+
+    /* Print footer */
+    .print-footer {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        text-align: center;
+        font-size: 10px;
+        color: #666;
+        border-top: 1px solid #ddd;
+        padding-top: 5px;
+    }
+
+    /* Ensure content doesn't break in awkward places */
+    .page-break {
+        page-break-before: always;
+    }
+
+    /* Ensure images and other elements print properly */
+    img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* Hide print button when printing */
+    .print-button {
+        display: none !important;
+    }
+}

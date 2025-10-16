@@ -20,6 +20,7 @@ if ($_POST) {
         $customer_phone = sanitizeInput($_POST['customer_phone'] ?? '');
         $customer_email = sanitizeInput($_POST['customer_email'] ?? '');
         $item_id = intval($_POST['item_id'] ?? 0);
+        $manual_item_name = sanitizeInput($_POST['manual_item_name'] ?? '');
         $quantity = intval($_POST['quantity'] ?? 0);
         $payment_method = $_POST['payment_method'] ?? 'credit';
         $payment_status = $_POST['payment_status'] ?? 'pending';
@@ -30,8 +31,9 @@ if ($_POST) {
             $validation_errors[] = 'Customer name is required.';
         }
 
-        if ($item_id <= 0) {
-            $validation_errors[] = 'Please select a valid item.';
+        // Check if either item_id is selected OR manual item name is provided
+        if ($item_id <= 0 && empty($manual_item_name)) {
+            $validation_errors[] = 'Please select an item from dropdown or enter item name manually.';
         }
 
         if ($quantity <= 0) {
@@ -49,68 +51,199 @@ if ($_POST) {
         // If no validation errors, proceed with database operations
         if (empty($validation_errors)) {
             try {
-                // Get item details
-                $query = "SELECT unit_price, current_stock, item_name FROM inventory WHERE id = :item_id";
-                $stmt = $db->prepare($query);
-                $stmt->bindParam(':item_id', $item_id);
-                $stmt->execute();
-
-                if ($stmt->rowCount() > 0) {
-                    $item = $stmt->fetch();
-                    $unit_price = $item['unit_price'];
-                    $total_amount = $unit_price * $quantity;
-
-                    // Check if enough stock is available
-                    if ($item['current_stock'] < $quantity) {
-                        $validation_errors[] = 'Insufficient stock. Only ' . $item['current_stock'] . ' units available for ' . $item['item_name'];
-                    } else {
-                        // Insert new order/sale record
-                        $query = "INSERT INTO sales (user_id, item_id, customer_name, customer_phone, customer_email, quantity, unit_price, total_amount, payment_method, payment_status, notes, created_at)
-                                 VALUES (:user_id, :item_id, :customer_name, :customer_phone, :customer_email, :quantity, :unit_price, :total_amount, :payment_method, :payment_status, :notes, NOW())";
-                        $stmt = $db->prepare($query);
-                        $stmt->bindParam(':user_id', $user_id);
-                        $stmt->bindParam(':item_id', $item_id);
-                        $stmt->bindParam(':customer_name', $customer_name);
-                        $stmt->bindParam(':customer_phone', $customer_phone);
-                        $stmt->bindParam(':customer_email', $customer_email);
-                        $stmt->bindParam(':quantity', $quantity);
-                        $stmt->bindParam(':unit_price', $unit_price);
-                        $stmt->bindParam(':total_amount', $total_amount);
-                        $stmt->bindParam(':payment_method', $payment_method);
-                        $stmt->bindParam(':payment_status', $payment_status);
-                        $stmt->bindParam(':notes', $notes);
-
-                        if ($stmt->execute()) {
-                            // Update inventory stock
-                            $new_stock = $item['current_stock'] - $quantity;
-                            $update_query = "UPDATE inventory SET current_stock = :new_stock WHERE id = :item_id";
-                            $update_stmt = $db->prepare($update_query);
-                            $update_stmt->bindParam(':new_stock', $new_stock);
-                            $update_stmt->bindParam(':item_id', $item_id);
-                            $update_stmt->execute();
-
-                            // Record stock history
-                            $history_query = "INSERT INTO stock_history (item_id, movement_type, quantity, previous_stock, new_stock, created_by, notes)
-                                             VALUES (:item_id, 'sale', :quantity, :previous_stock, :new_stock, :created_by, :notes)";
-                            $history_stmt = $db->prepare($history_query);
-                            $history_stmt->bindParam(':item_id', $item_id);
-                            $history_stmt->bindParam(':quantity', $quantity);
-                            $history_stmt->bindParam(':previous_stock', $item['current_stock']);
-                            $history_stmt->bindParam(':new_stock', $new_stock);
-                            $history_stmt->bindParam(':created_by', $user_id);
-                            $history_stmt->bindParam(':notes', $notes);
-                            $history_stmt->execute();
-
-                            $success_message = 'Order for ' . $customer_name . ' has been recorded successfully! Total: ' . formatCurrency($total_amount);
-
-                            // Clear POST data to prevent form repopulation
-                            $_POST = [];
-                        } else {
-                            $error_message = 'Database error: Failed to record order. Please try again.';
+                // If no validation errors, proceed with database operations
+                if (empty($validation_errors)) {
+                    try {
+                        // Start transaction
+                        $db->beginTransaction();
+        
+                        // Process each item in the order and calculate total
+                        $total_amount = 0;
+                        $order_items = [];
+        
+                        // First, validate all items and calculate total
+                        foreach ($items as $item) {
+                            $item_id = intval($item['item_id']);
+                            $quantity = intval($item['quantity']);
+                            $unit_price = floatval($item['unit_price']);
+        
+                            // Get item details from inventory
+                            $query = "SELECT i.id, i.unit_price as default_price, i.item_name, i.item_code, i.current_stock
+                                      FROM inventory i
+                                      WHERE i.id = :item_id";
+                            $stmt = $db->prepare($query);
+                            $stmt->bindParam(':item_id', $item_id, PDO::PARAM_INT);
+                            $stmt->execute();
+        
+                            if ($stmt->rowCount() === 0) {
+                                throw new Exception('Item not found: ' . $item['item_name']);
+                            }
+        
+                            $item_data = $stmt->fetch();
+        
+                            // Check if there's enough stock in inventory
+                            if ($item_data['current_stock'] < $quantity) {
+                                throw new Exception('Insufficient stock for ' . $item_data['item_name'] . '. Available: ' . $item_data['current_stock']);
+                            }
+        
+                            $item_total = $unit_price * $quantity;
+                            $total_amount += $item_total;
+        
+                            // Store item data for processing after validation
+                            $order_items[] = [
+                                'item_id' => $item_id,
+                                'quantity' => $quantity,
+                                'unit_price' => $unit_price,
+                                'item_name' => $item_data['item_name'],
+                                'item_code' => $item_data['item_code'],
+                                'current_stock' => $item_data['current_stock'],
+                                'new_stock' => $item_data['current_stock'] - $quantity
+                            ];
                         }
+        
+                        // Insert the main order record
+                        $query = "INSERT INTO orders (
+                                    user_id,
+                                    customer_name,
+                                    customer_phone,
+                                    customer_email,
+                                    total_amount,
+                                    payment_method,
+                                    payment_status,
+                                    notes,
+                                    created_at
+                                  ) VALUES (
+                                    :user_id,
+                                    :customer_name,
+                                    :customer_phone,
+                                    :customer_email,
+                                    :total_amount,
+                                    :payment_method,
+                                    :payment_status,
+                                    :notes,
+                                    NOW()
+                                  )";
+        
+                        $stmt = $db->prepare($query);
+                        $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+                        $stmt->bindParam(':customer_name', $customer_name, PDO::PARAM_STR);
+                        $stmt->bindParam(':customer_phone', $customer_phone, PDO::PARAM_STR);
+                        $stmt->bindParam(':customer_email', $customer_email, PDO::PARAM_STR);
+                        $stmt->bindParam(':total_amount', $total_amount, PDO::PARAM_STR);
+                        $stmt->bindParam(':payment_method', $payment_method, PDO::PARAM_STR);
+                        $stmt->bindParam(':payment_status', $payment_status, PDO::PARAM_STR);
+                        $stmt->bindParam(':notes', $notes, PDO::PARAM_STR);
+        
+                        if (!$stmt->execute()) {
+                            throw new Exception('Failed to create order');
+                        }
+        
+                        $order_id = $db->lastInsertId();
+        
+                        // Process each item in the order
+                        foreach ($order_items as $item) {
+                            // Insert order item
+                            $query = "INSERT INTO order_items (
+                                        order_id,
+                                        item_id,
+                                        quantity,
+                                        unit_price,
+                                        total_price,
+                                        created_at
+                                      ) VALUES (
+                                        :order_id,
+                                        :item_id,
+                                        :quantity,
+                                        :unit_price,
+                                        :total_price,
+                                        NOW()
+                                      )";
+        
+                            $item_total = $item['unit_price'] * $item['quantity'];
+        
+                            $stmt = $db->prepare($query);
+                            $stmt->bindParam(':order_id', $order_id, PDO::PARAM_INT);
+                            $stmt->bindParam(':item_id', $item['item_id'], PDO::PARAM_INT);
+                            $stmt->bindParam(':quantity', $item['quantity'], PDO::PARAM_INT);
+                            $stmt->bindParam(':unit_price', $item['unit_price'], PDO::PARAM_STR);
+                            $stmt->bindParam(':total_price', $item_total, PDO::PARAM_STR);
+        
+                            if (!$stmt->execute()) {
+                                throw new Exception('Failed to add item to order');
+                            }
+        
+                            // Update inventory for this item
+                            $query = "UPDATE inventory
+                                      SET current_stock = current_stock - :quantity
+                                      WHERE id = :item_id
+                                      AND current_stock >= :quantity";
+                            $stmt = $db->prepare($query);
+                            $stmt->bindParam(':item_id', $item['item_id'], PDO::PARAM_INT);
+                            $stmt->bindParam(':quantity', $item['quantity'], PDO::PARAM_INT);
+                            $stmt->execute();
+        
+                            if ($stmt->rowCount() === 0) {
+                                throw new Exception('Inventory update failed for ' . $item['item_name'] . '. The item stock may have been modified by another user.');
+                            }
+        
+                            // Record stock history
+                            $query = "INSERT INTO stock_history (
+                                        item_id,
+                                        movement_type,
+                                        quantity,
+                                        previous_stock,
+                                        new_stock,
+                                        reference_id,
+                                        created_by,
+                                        notes
+                                      ) VALUES (
+                                        :item_id,
+                                        'sale',
+                                        :quantity,
+                                        :previous_stock,
+                                        :new_stock,
+                                        :sale_id,
+                                        :user_id,
+                                        :notes
+                                      )";
+        
+                            $previous_stock = $item['current_stock'];
+                            $new_stock = $item['new_stock'];
+        
+                            // Prepare notes for stock history
+                            $notes = "Sold to: $customer_name" . ($customer_phone ? " ($customer_phone)" : '');
+        
+                            $stmt = $db->prepare($query);
+                            $stmt->bindParam(':item_id', $item['item_id'], PDO::PARAM_INT);
+                            $stmt->bindParam(':quantity', $item['quantity'], PDO::PARAM_INT);
+                            $stmt->bindParam(':previous_stock', $previous_stock, PDO::PARAM_INT);
+                            $stmt->bindParam(':new_stock', $new_stock, PDO::PARAM_INT);
+                            $stmt->bindParam(':sale_id', $order_id, PDO::PARAM_INT);
+                            $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+                            $stmt->bindValue(':notes', $notes, PDO::PARAM_STR);
+        
+                            if (!$stmt->execute()) {
+                                throw new Exception('Failed to record stock history');
+                            }
+                        }
+        
+                        // If we got here, everything was successful
+                        $db->commit();
+        
+                        $success_message = 'Order for ' . $customer_name . ' has been recorded successfully! Total: ' . formatCurrency($total_amount);
+        
+                        // Clear POST data to prevent form repopulation
+                        $_POST = [];
+        
+                    } catch (Exception $e) {
+                        // Rollback transaction on error
+                        if ($db->inTransaction()) {
+                            $db->rollBack();
+                        }
+        
+                        $error_message = 'System error: Unable to record order. Please contact administrator.';
+                        error_log("Order recording error: " . $e->getMessage());
                     }
-                } else {
-                    $validation_errors[] = 'Selected item not found.';
                 }
             } catch (Exception $e) {
                 $error_message = 'System error: Unable to record order. Please contact administrator.';
@@ -318,47 +451,137 @@ $order_stats = $stmt->fetch();
                             <!-- Order Details Section -->
                             <div class="form-section mb-4">
                                 <h6 class="section-title text-primary mb-3">
-                                    <i class="fa fa-shopping-cart me-2"></i>Order Details
+                                    <i class="fa fa-shopping-cart me-2"></i>Order Items
                                 </h6>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-3">
-                                            <label for="item_id" class="form-label">
-                                                Select Item <span class="text-danger">*</span>
-                                            </label>
-                                            <select name="item_id" id="item_id" class="form-control" required>
-                                                <option value="">Choose an item...</option>
-                                                <?php foreach ($inventory_items as $item): ?>
-                                                    <option value="<?php echo $item['id']; ?>"
-                                                            data-price="<?php echo $item['unit_price']; ?>"
-                                                            <?php echo (isset($_POST['item_id']) && $_POST['item_id'] == $item['id']) ? 'selected' : ''; ?>>
-                                                        <?php echo $item['item_name'] . ' (' . $item['item_code'] . ') - ' . formatCurrency($item['unit_price']) . ' - Stock: ' . $item['current_stock']; ?>
-                                                    </option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                            <div class="invalid-feedback">
-                                                Please select an item.
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <small class="text-muted">Add multiple items to this order</small>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="add-item-btn">
+                                        <i class="fa fa-plus me-1"></i> Add Item
+                                    </button>
+                                </div>
+
+                                <div id="order-items">
+                                    <!-- Item row template (hidden) -->
+                                    <div class="item-row mb-3 border-bottom pb-3" style="display: none;">
+                                        <div class="row g-2">
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label class="form-label">Item <span class="text-danger">*</span></label>
+                                                    <select class="form-select item-select" name="items[0][item_id]" required>
+                                                        <option value="">Select an item</option>
+                                                        <option value="add_new" style="font-weight: bold; color: #007bff;">➕ Add New Item</option>
+                                                        <?php foreach ($inventory_items as $item): ?>
+                                                            <option value="<?php echo $item['id']; ?>"
+                                                                    data-price="<?php echo $item['unit_price']; ?>"
+                                                                    data-stock="<?php echo $item['current_stock']; ?>">
+                                                                <?php echo htmlspecialchars(sprintf(
+                                                                    '%s (%s) - Available: %d',
+                                                                    $item['item_name'],
+                                                                    $item['item_code'],
+                                                                    $item['current_stock']
+                                                                )); ?>
+                                                            </option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label class="form-label">Qty <span class="text-danger">*</span></label>
+                                                    <input type="number" class="form-control quantity" name="items[0][quantity]" min="1" value="1" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label class="form-label">Unit Price <span class="text-danger">*</span></label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text">Rwf</span>
+                                                        <input type="number" class="form-control unit-price" name="items[0][unit_price]" step="0.01" min="0" required>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label class="form-label">Total</label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text">Rwf</span>
+                                                        <input type="text" class="form-control item-total" readonly>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label class="form-label">Notes</label>
+                                                    <input type="text" class="form-control" name="items[0][notes]" placeholder="Optional notes">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-1 d-flex align-items-end">
+                                                <button type="button" class="btn btn-sm btn-danger remove-item" style="margin-bottom: 0.5rem;">
+                                                    <i class="fa fa-trash"></i>
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-md-3">
-                                        <div class="form-group mb-3">
-                                            <label for="quantity" class="form-label">
-                                                Quantity <span class="text-danger">*</span>
-                                            </label>
-                                            <input type="number" name="quantity" id="quantity"
-                                                   class="form-control" min="1" required
-                                                   placeholder="Qty" value="<?php echo isset($_POST['quantity']) ? $_POST['quantity'] : ''; ?>">
-                                            <div class="invalid-feedback">
-                                                Please enter a valid quantity.
+
+                                    <!-- First item (always visible) -->
+                                    <div class="item-row mb-3 border-bottom pb-3">
+                                        <div class="row g-2">
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label class="form-label">Item <span class="text-danger">*</span></label>
+                                                    <select class="form-select item-select" name="items[0][item_id]" required>
+                                                        <option value="">Select an item</option>
+                                                        <option value="add_new" style="font-weight: bold; color: #007bff;">➕ Add New Item</option>
+                                                        <?php foreach ($inventory_items as $item): ?>
+                                                            <option value="<?php echo $item['id']; ?>"
+                                                                    data-price="<?php echo $item['unit_price']; ?>"
+                                                                    data-stock="<?php echo $item['current_stock']; ?>">
+                                                                <?php echo htmlspecialchars(sprintf(
+                                                                    '%s (%s) - Available: %d',
+                                                                    $item['item_name'],
+                                                                    $item['item_code'],
+                                                                    $item['current_stock']
+                                                                )); ?>
+                                                            </option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="form-group mb-3">
-                                            <label for="total_amount" class="form-label">Total Amount</label>
-                                            <input type="text" id="total_amount" class="form-control" readonly
-                                                   value="<?php echo isset($_POST['item_id']) && isset($_POST['quantity']) ? formatCurrency(floatval($_POST['quantity']) * floatval($inventory_items[array_search($_POST['item_id'], array_column($inventory_items, 'id'))]['unit_price'] ?? 0)) : ''; ?>">
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label class="form-label">Qty <span class="text-danger">*</span></label>
+                                                    <input type="number" class="form-control quantity" name="items[0][quantity]" min="1" value="1" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label class="form-label">Unit Price <span class="text-danger">*</span></label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text">Rwf</span>
+                                                        <input type="number" class="form-control unit-price" name="items[0][unit_price]" step="0.01" min="0" required>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label class="form-label">Total</label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text">Rwf</span>
+                                                        <input type="text" class="form-control item-total" readonly>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label class="form-label">Notes</label>
+                                                    <input type="text" class="form-control" name="items[0][notes]" placeholder="Optional notes">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-1 d-flex align-items-end">
+                                                <button type="button" class="btn btn-sm btn-danger remove-item" style="margin-bottom: 0.5rem;" disabled>
+                                                    <i class="fa fa-trash"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -570,21 +793,166 @@ $order_stats = $stmt->fetch();
 
 <script>
 // Auto-calculate total amount
-document.getElementById('item_id').addEventListener('change', function() {
-    const selectedOption = this.options[this.selectedIndex];
-    const price = selectedOption.getAttribute('data-price') || 0;
-    const quantity = document.getElementById('quantity').value || 0;
-    const total = parseFloat(price) * parseInt(quantity);
-    document.getElementById('total_amount').value = formatCurrency(total);
+// Format currency
+function formatCurrency(amount) {
+    return 'Rwf ' + new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+    }).format(amount);
+}
+
+// Calculate total for a single row
+function calculateRowTotal(row) {
+    const quantityInput = row.querySelector('.quantity');
+    const unitPriceInput = row.querySelector('.unit-price');
+    const itemTotalInput = row.querySelector('.item-total');
+
+    if (quantityInput.value && unitPriceInput.value) {
+        const quantity = parseInt(quantityInput.value);
+        const unitPrice = parseFloat(unitPriceInput.value);
+
+        if (quantity > 0 && unitPrice >= 0) {
+            const total = quantity * unitPrice;
+            itemTotalInput.value = formatCurrency(total);
+            return total;
+        }
+    }
+
+    itemTotalInput.value = '';
+    return 0;
+}
+
+// Calculate and update the total amount
+function updateTotal() {
+    let total = 0;
+    document.querySelectorAll('.item-row:not([style*="display: none"])').forEach(row => {
+        total += calculateRowTotal(row);
+    });
+
+    document.getElementById('total-amount').value = formatCurrency(total);
+}
+
+// Add new item row
+document.getElementById('add-item-btn').addEventListener('click', function() {
+    const itemRows = document.querySelectorAll('.item-row:not([style*="display: none"])');
+    const template = document.querySelector('.item-row[style*="display: none"]');
+    const newRow = template.cloneNode(true);
+
+    // Update the index in the name attributes
+    const newIndex = itemRows.length;
+    newRow.style.display = '';
+
+    // Update all form control names
+    newRow.querySelectorAll('[name]').forEach(el => {
+        el.name = el.name.replace(/\[\d+\]/, `[${newIndex}]`);
+    });
+
+    // Clear values
+    newRow.querySelector('.item-select').value = '';
+    newRow.querySelector('.manual-item-input').value = '';
+    newRow.querySelector('.quantity').value = '1';
+    newRow.querySelector('.unit-price').value = '';
+    newRow.querySelector('.item-total').value = '';
+    newRow.querySelector('[name*="notes"]').value = '';
+
+    // Insert before the template
+    template.parentNode.insertBefore(newRow, template);
+
+    // Add event listeners to the new row
+    addRowEventListeners(newRow);
+
+    // Focus on the new item select
+    newRow.querySelector('.item-select')?.focus();
 });
 
-document.getElementById('quantity').addEventListener('input', function() {
-    const itemSelect = document.getElementById('item_id');
-    const selectedOption = itemSelect.options[itemSelect.selectedIndex];
-    const price = selectedOption.getAttribute('data-price') || 0;
-    const quantity = this.value || 0;
-    const total = parseFloat(price) * parseInt(quantity);
-    document.getElementById('total_amount').value = formatCurrency(total);
+// Add event listeners to a row
+function addRowEventListeners(row) {
+    // Item select change - populate unit price
+    const select = row.querySelector('.item-select');
+    const quantityInput = row.querySelector('.quantity');
+    const unitPriceInput = row.querySelector('.unit-price');
+    const removeBtn = row.querySelector('.remove-item');
+
+    if (select) {
+        select.addEventListener('change', function() {
+            if (this.value === 'add_new') {
+                // Switch to manual input mode
+                switchToManualInput(row);
+            } else if (this.value) {
+                const selectedOption = this.options[this.selectedIndex];
+                const defaultPrice = selectedOption.dataset.price;
+                if (defaultPrice && !unitPriceInput.value) {
+                    unitPriceInput.value = defaultPrice;
+                }
+            }
+            updateTotal();
+        });
+    }
+
+    if (quantityInput) quantityInput.addEventListener('input', updateTotal);
+    if (unitPriceInput) unitPriceInput.addEventListener('input', updateTotal);
+
+    // Remove button
+    if (removeBtn) {
+        removeBtn.addEventListener('click', function() {
+            row.remove();
+            updateTotal();
+        });
+    }
+}
+
+// Function to switch to manual input mode
+function switchToManualInput(row) {
+    const select = row.querySelector('.item-select');
+    const manualInput = row.querySelector('.manual-item-input');
+    const switchBtn = row.querySelector('.switch-to-dropdown');
+
+    // Hide select and show manual input
+    select.style.display = 'none';
+    manualInput.style.display = 'block';
+    switchBtn.style.display = 'block';
+
+    // Focus on manual input
+    manualInput.focus();
+
+    // Clear any previous values
+    select.value = '';
+    manualInput.value = '';
+
+    // Update total
+    updateTotal();
+}
+
+// Function to switch back to dropdown
+function switchToDropdown(btn) {
+    const row = btn.closest('.item-row');
+    const select = row.querySelector('.item-select');
+    const manualInput = row.querySelector('.manual-item-input');
+    const switchBtn = row.querySelector('.switch-to-dropdown');
+
+    // Show select and hide manual input
+    select.style.display = 'block';
+    manualInput.style.display = 'none';
+    switchBtn.style.display = 'none';
+
+    // Clear values
+    select.value = '';
+    manualInput.value = '';
+
+    // Update total
+    updateTotal();
+}
+
+
+// Initialize event listeners for existing rows
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners to existing rows
+    document.querySelectorAll('.item-row:not([style*="display: none"])').forEach(row => {
+        addRowEventListeners(row);
+    });
+
+    // Initial total calculation
+    updateTotal();
 });
 
 // Format currency helper
@@ -597,41 +965,52 @@ function formatCurrency(amount) {
 
 // Form validation
 document.getElementById('orderForm').addEventListener('submit', function(e) {
-    const form = this;
     let isValid = true;
+    const itemRows = document.querySelectorAll('.item-row:not([style*="display: none"])');
 
-    // Clear previous validation
-    const fields = form.querySelectorAll('.is-valid, .is-invalid');
-    fields.forEach(field => field.classList.remove('is-valid', 'is-invalid'));
+    // Validate each visible row
+    itemRows.forEach((row, index) => {
+        const itemSelect = row.querySelector('.item-select');
+        const manualInput = row.querySelector('.manual-item-input');
+        const quantityInput = row.querySelector('.quantity');
 
-    // Validate required fields
-    const requiredFields = form.querySelectorAll('input[required], select[required]');
-    requiredFields.forEach(function(field) {
-        if (!field.value.trim()) {
-            field.classList.add('is-invalid');
+        // Check if either dropdown has selection OR manual input has value
+        const hasDropdownSelection = itemSelect && itemSelect.selectedIndex > 0;
+        const hasManualInput = manualInput && manualInput.value.trim() !== '';
+
+        if (!hasDropdownSelection && !hasManualInput) {
+            e.preventDefault();
+            alert(`Please select an item from dropdown or enter item name manually for item #${index + 1}`);
+            if (itemSelect && itemSelect.style.display !== 'none') {
+                itemSelect.focus();
+            } else if (manualInput && manualInput.style.display !== 'none') {
+                manualInput.focus();
+            }
             isValid = false;
-        } else {
-            field.classList.add('is-valid');
+            return false;
+        }
+
+        if (!quantityInput || quantityInput.value <= 0) {
+            e.preventDefault();
+            alert(`Please enter a valid quantity for item #${index + 1}`);
+            if (quantityInput) quantityInput.focus();
+            isValid = false;
+            return false;
         }
     });
 
-    // Validate email if provided
-    const emailField = form.querySelector('#customer_email');
-    if (emailField.value && !emailField.checkValidity()) {
-        emailField.classList.add('is-invalid');
-        isValid = false;
-    }
-
     if (!isValid) {
-        e.preventDefault();
-        alert('Please correct the errors in the form.');
         return false;
     }
 
     // Show loading state
-    const submitBtn = form.querySelector('button[type="submit"]');
-    submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>Recording Order...';
-    submitBtn.disabled = true;
+    const submitBtn = this.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Processing...';
+    }
+
+    return true;
 });
 
 // Helper functions for order actions
