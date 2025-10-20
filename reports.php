@@ -130,7 +130,7 @@ $attendance_report = $stmt->fetch();
                                 <input type="date" name="end_date" id="end_date" class="form-control" value="<?php echo $end_date; ?>" required>
                             </div>
                             <button type="submit" class="btn btn-primary">Generate Report</button>
-                            <button type="button" class="btn btn-success ml-2" onclick="window.print()">
+                            <button type="button" class="btn btn-success ml-2" onclick="printStockMovement()">
                                 <i class="fa fa-print"></i> Print Report
                             </button>
                         </form>
@@ -304,7 +304,7 @@ $attendance_report = $stmt->fetch();
             <div class="full graph_revenue">
                 <div class="row">
                     <div class="col-md-12">
-                        <?php if (count($stock_movements) > 0): ?>
+
                             <div class="table-responsive">
                                 <table class="table table-striped table-bordered">
                                     <thead>
@@ -320,6 +320,7 @@ $attendance_report = $stmt->fetch();
                                         </tr>
                                     </thead>
                                     <tbody>
+                                    <?php if (count($stock_movements) > 0): ?>
                                         <?php foreach ($stock_movements as $movement): ?>
                                             <tr>
                                                 <td><?php echo formatDateTime($movement['created_at']); ?></td>
@@ -359,9 +360,11 @@ $attendance_report = $stmt->fetch();
                                     </tbody>
                                 </table>
                             </div>
-                        <?php else: ?>
-                            <p class="text-muted">No stock movements found for the selected period</p>
-                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <tr>
+                                            <td colspan="8" class="text-center text-muted">No stock movements found for the selected period</td>
+                                        </tr>
+                                    <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -371,14 +374,42 @@ $attendance_report = $stmt->fetch();
 
 <style>
 @media print {
-    /* Hide navigation and controls */
-    .sidebar, .topbar, .btn, .form-control, .form-group,
-    .navbar, .icon_info, .user_profile_dd, .footer,
-    .column_title, .margin_bottom_30, .full, .graph_head {
+    /* Hide everything except the print content */
+    * {
         display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
     }
 
-    /* Show main content */
+    /* Show the print header */
+    .print-header,
+    .print-header * {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    /* Show the Stock Movement History section */
+    .row:has(.white_shd),
+    .row:has(.white_shd) *,
+    .row:has(.white_shd) .heading1 h2,
+    .row:has(.white_shd) .table-responsive,
+    .row:has(.white_shd) table,
+    .row:has(.white_shd) thead,
+    .row:has(.white_shd) tbody,
+    .row:has(.white_shd) tr,
+    .row:has(.white_shd) th,
+    .row:has(.white_shd) td,
+    .row:has(.white_shd) .badge,
+    .row:has(.white_shd) .text-muted,
+    .row:has(.white_shd) strong,
+    .row:has(.white_shd) small {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    /* Reset body styles */
     body {
         margin: 0 !important;
         padding: 20px !important;
@@ -386,193 +417,123 @@ $attendance_report = $stmt->fetch();
         font-size: 12px !important;
         line-height: 1.4 !important;
         color: #000 !important;
+        background: white !important;
     }
 
-    .container-fluid {
-        margin: 0 !important;
-        padding: 0 !important;
-        width: 100% !important;
-        max-width: none !important;
-    }
-
-    /* Ensure content is visible */
-    .white_shd, .counter_section, .table-responsive,
-    .graph_revenue, .row, .col-md-12, .col-md-6, .col-md-3 {
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        box-shadow: none !important;
-        border: none !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    .row {
-        margin: 0 -15px !important;
-    }
-
-    .col-md-12, .col-md-6, .col-md-3 {
-        padding: 0 15px !important;
-        margin-bottom: 20px !important;
-    }
-
-    .counter_section {
-        border: 1px solid #ddd !important;
-        border-radius: 5px !important;
-        padding: 15px !important;
-        margin-bottom: 15px !important;
-        page-break-inside: avoid;
-    }
-
-    .couter_icon {
-        float: left !important;
-        margin-right: 15px !important;
-    }
-
-    .counter_no {
-        overflow: hidden !important;
-    }
-
-    .total_no {
-        font-size: 24px !important;
-        font-weight: bold !important;
-        color: #000 !important;
-    }
-
-    .head_couter {
-        font-size: 12px !important;
-        color: #666 !important;
-        margin-top: 5px !important;
-    }
-
-    .page_title h2 {
-        color: #000 !important;
-        font-size: 24px !important;
-        margin-bottom: 20px !important;
+    /* Style the print header */
+    .print-header {
         text-align: center !important;
+        margin-bottom: 20px !important;
         border-bottom: 2px solid #000 !important;
         padding-bottom: 10px !important;
     }
 
-    .heading1 h2 {
+    .print-header h1 {
+        margin: 0 0 5px 0 !important;
+        font-size: 24px !important;
+        color: #000 !important;
+        font-weight: bold !important;
+    }
+
+    .print-header p {
+        margin: 0 !important;
+        font-size: 12px !important;
+        color: #666 !important;
+    }
+
+    /* Style the Stock Movement History section */
+    .row:has(.white_shd) {
+        margin: 0 !important;
+        padding: 0 !important;
+        page-break-inside: avoid !important;
+    }
+
+    /* Style the table title */
+    .row:has(.white_shd) .heading1 h2 {
         color: #000 !important;
         font-size: 18px !important;
+        font-weight: bold !important;
         margin-bottom: 15px !important;
-        border-bottom: 1px solid #ddd !important;
+        text-align: center !important;
+        border-bottom: 1px solid #000 !important;
         padding-bottom: 5px !important;
     }
 
-    table {
+    /* Style the table */
+    .row:has(.white_shd) table {
         border-collapse: collapse !important;
         width: 100% !important;
-        margin-bottom: 20px !important;
-        page-break-inside: avoid;
+        margin: 0 !important;
+        page-break-inside: avoid !important;
     }
 
-    table th, table td {
+    /* Style table headers */
+    .row:has(.white_shd) thead th {
         border: 1px solid #000 !important;
         padding: 8px !important;
-        text-align: left !important;
-        vertical-align: top !important;
-    }
-
-    table th {
         background-color: #f5f5f5 !important;
         font-weight: bold !important;
         color: #000 !important;
+        text-align: left !important;
+        vertical-align: top !important;
+        font-size: 11px !important;
     }
 
-    .badge {
+    /* Style table body cells */
+    .row:has(.white_shd) tbody td {
+        border: 1px solid #000 !important;
+        padding: 6px !important;
+        text-align: left !important;
+        vertical-align: top !important;
+        font-size: 10px !important;
+        color: #000 !important;
+        word-wrap: break-word !important;
+    }
+
+    /* Style badges */
+    .row:has(.white_shd) .badge {
+        display: inline-block !important;
         background-color: #000 !important;
         color: #fff !important;
         padding: 2px 6px !important;
         border-radius: 3px !important;
-        font-size: 10px !important;
+        font-size: 9px !important;
+        font-weight: normal !important;
+        margin: 0 !important;
     }
 
-    .text-muted {
+    /* Style text-muted elements */
+    .row:has(.white_shd) .text-muted {
         color: #666 !important;
+        font-size: 9px !important;
     }
 
-    .print-header {
-        text-align: center;
-        margin-bottom: 30px;
-        border-bottom: 2px solid #000;
-        padding-bottom: 10px;
-    }
-
-    .print-header h1 {
-        margin: 0;
-        font-size: 28px;
-        color: #000;
-    }
-
-    .print-header p {
-        margin: 5px 0 0 0;
-        font-size: 14px;
-        color: #666;
-    }
-
-    /* Page break controls */
-    .row:not(:last-child) {
-        margin-bottom: 30px !important;
-    }
-
-    /* Ensure all text is black */
-    * {
+    /* Style strong elements */
+    .row:has(.white_shd) strong {
+        font-weight: bold !important;
         color: #000 !important;
     }
 
-    /* Hide empty elements */
-    .text-muted:empty {
+    /* Style small elements */
+    .row:has(.white_shd) small {
+        font-size: 8px !important;
+        color: #666 !important;
+    }
+
+    /* Hide line breaks for cleaner display */
+    .row:has(.white_shd) br {
         display: none !important;
     }
 
-    /* Show print header */
-    .print-header {
-        display: block !important;
-    }
-
-    /* Ensure report content is visible */
-    .row.column_title,
-    .row.column1,
-    .row:has(.white_shd) {
-        display: block !important;
-    }
-
-    /* Specifically ensure Stock Movement History table is visible */
-    .row:has(.white_shd) .table-responsive,
-    .row:has(.white_shd) table,
-    .row:has(.white_shd) thead,
-    .row:has(.white_shd) tbody,
-    .row:has(.white_shd) tr,
-    .row:has(.white_shd) th,
-    .row:has(.white_shd) td {
-        display: table !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-    }
-
-    /* Ensure table cells have proper display */
-    .row:has(.white_shd) td,
-    .row:has(.white_shd) th {
-        display: table-cell !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-    }
-
-    /* Make sure table headers are visible */
-    .row:has(.white_shd) thead tr:first-child {
-        display: table-row !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-    }
-
-    /* Ensure table body rows are visible */
+    /* Ensure table rows are visible */
     .row:has(.white_shd) tbody tr {
         display: table-row !important;
-        visibility: visible !important;
-        opacity: 1 !important;
+        page-break-inside: avoid !important;
+    }
+
+    /* Ensure table cells are visible */
+    .row:has(.white_shd) tbody tr td {
+        display: table-cell !important;
     }
 }
 
@@ -583,6 +544,8 @@ $attendance_report = $stmt->fetch();
 @media print {
     .print-header {
         display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
     }
 }
 </style>
@@ -592,5 +555,191 @@ $attendance_report = $stmt->fetch();
     <p>Reports & Analytics - <?php echo date('F d, Y', strtotime($start_date)) . ' to ' . date('F d, Y', strtotime($end_date)); ?></p>
     <p>Generated on: <?php echo date('F d, Y g:i A'); ?></p>
 </div>
+
+<script>
+function printStockMovement() {
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+
+    // Get the content to print
+    const printHeader = document.querySelector('.print-header').outerHTML;
+    const tableTitle = '<h2 style="text-align: center; margin: 20px 0; border-bottom: 1px solid #000; padding-bottom: 5px;">Stock Movement History</h2>';
+
+    // Get the table content
+    const tableElement = document.querySelector('.row:has(.white_shd) table');
+    let tableHTML = '';
+
+    if (tableElement) {
+        // Clone the table and clean it up for printing
+        const clonedTable = tableElement.cloneNode(true);
+
+        // Remove Bootstrap classes and add print-friendly styles
+        clonedTable.className = '';
+        clonedTable.style.width = '100%';
+        clonedTable.style.borderCollapse = 'collapse';
+        clonedTable.style.margin = '0';
+
+        // Style table headers
+        const headers = clonedTable.querySelectorAll('th');
+        headers.forEach(th => {
+            th.style.border = '1px solid #000';
+            th.style.padding = '8px';
+            th.style.backgroundColor = '#f5f5f5';
+            th.style.fontWeight = 'bold';
+            th.style.color = '#000';
+            th.style.textAlign = 'left';
+            th.style.verticalAlign = 'top';
+            th.style.fontSize = '11px';
+        });
+
+        // Style table cells
+        const cells = clonedTable.querySelectorAll('td');
+        cells.forEach(td => {
+            td.style.border = '1px solid #000';
+            td.style.padding = '6px';
+            td.style.textAlign = 'left';
+            td.style.verticalAlign = 'top';
+            td.style.fontSize = '10px';
+            td.style.color = '#000';
+        });
+
+        // Style badges
+        const badges = clonedTable.querySelectorAll('.badge');
+        badges.forEach(badge => {
+            badge.style.display = 'inline-block';
+            badge.style.backgroundColor = '#000';
+            badge.style.color = '#fff';
+            badge.style.padding = '2px 6px';
+            badge.style.borderRadius = '3px';
+            badge.style.fontSize = '9px';
+            badge.style.fontWeight = 'normal';
+        });
+
+        // Style text-muted elements
+        const mutedElements = clonedTable.querySelectorAll('.text-muted');
+        mutedElements.forEach(el => {
+            el.style.color = '#666';
+            el.style.fontSize = '9px';
+        });
+
+        // Style strong elements
+        const strongElements = clonedTable.querySelectorAll('strong');
+        strongElements.forEach(el => {
+            el.style.fontWeight = 'bold';
+            el.style.color = '#000';
+        });
+
+        // Style small elements
+        const smallElements = clonedTable.querySelectorAll('small');
+        smallElements.forEach(el => {
+            el.style.fontSize = '8px';
+            el.style.color = '#666';
+        });
+
+        // Remove line breaks
+        const brElements = clonedTable.querySelectorAll('br');
+        brElements.forEach(br => br.remove());
+
+        tableHTML = clonedTable.outerHTML;
+    } else {
+        tableHTML = '<p style="text-align: center; color: #666;">No stock movements found for the selected period</p>';
+    }
+
+    // Create the print document
+    const printContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Stock Movement History Report</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    font-size: 12px;
+                    line-height: 1.4;
+                    color: #000;
+                    margin: 20px;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin: 20px 0;
+                }
+                th, td {
+                    border: 1px solid #000;
+                    padding: 6px 8px;
+                    text-align: left;
+                    vertical-align: top;
+                }
+                th {
+                    background-color: #f5f5f5;
+                    font-weight: bold;
+                }
+                .badge {
+                    display: inline-block;
+                    background-color: #000;
+                    color: #fff;
+                    padding: 2px 6px;
+                    border-radius: 3px;
+                    font-size: 9px;
+                }
+                .text-muted {
+                    color: #666;
+                    font-size: 9px;
+                }
+                strong {
+                    font-weight: bold;
+                }
+                small {
+                    font-size: 8px;
+                    color: #666;
+                }
+                h1 {
+                    text-align: center;
+                    margin: 0 0 5px 0;
+                    font-size: 24px;
+                    color: #000;
+                }
+                h2 {
+                    text-align: center;
+                    margin: 20px 0;
+                    border-bottom: 1px solid #000;
+                    padding-bottom: 5px;
+                    font-size: 18px;
+                }
+                p {
+                    margin: 5px 0;
+                    font-size: 12px;
+                    color: #666;
+                }
+                .header-info {
+                    text-align: center;
+                    margin-bottom: 20px;
+                    border-bottom: 2px solid #000;
+                    padding-bottom: 10px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header-info">
+                ${printHeader}
+            </div>
+            ${tableTitle}
+            ${tableHTML}
+        </body>
+        </html>
+    `;
+
+    // Write content to the print window
+    printWindow.document.open();
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+
+    // Wait for content to load then print
+    printWindow.onload = function() {
+        printWindow.print();
+        printWindow.close();
+    };
+}
+</script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
