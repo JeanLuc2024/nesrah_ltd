@@ -284,17 +284,13 @@ if ($_POST) {
 
             } catch (Exception $e) {
                 // Rollback transaction on error
-                if ($db->inTransaction()) {
-                    $db->rollBack();
-                }
+                $db->rollBack();
 
-                $error_message = 'System error: Unable to record order. Please contact administrator.';
-                error_log("Order recording error: " . $e->getMessage());
-            }
-        }
-            } catch (Exception $e) {
-                $error_message = 'System error: Unable to record order. Please contact administrator.';
-                error_log("Order recording error: " . $e->getMessage());
+                // Log the error
+                error_log("Order processing error: " . $e->getMessage());
+
+                // Add to validation errors
+                $validation_errors[] = 'An error occurred while processing the order: ' . $e->getMessage();
             }
         }
 
@@ -501,12 +497,11 @@ $order_stats = $stmt->fetch();
 
                             <!-- Order Details Section -->
                             <div class="form-section mb-4">
-                                <h6 class="section-title text-primary mb-3">
-                                    <i class="fa fa-shopping-cart me-2"></i>Order Items
-                                </h6>
                                 <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <small class="text-muted">Add multiple items to this order</small>
-                                    <button type="button" class="btn btn-sm btn-outline-primary" id="add-item-btn">
+                                    <h6 class="section-title text-primary mb-0">
+                                        <i class="fa fa-shopping-cart me-2"></i>Order Items
+                                    </h6>
+                                    <button type="button" class="btn btn-sm btn-primary" id="add-item-btn">
                                         <i class="fa fa-plus me-1"></i> Add Item
                                     </button>
                                 </div>
@@ -518,22 +513,28 @@ $order_stats = $stmt->fetch();
                                             <div class="col-md-3">
                                                 <div class="form-group">
                                                     <label class="form-label">Item <span class="text-danger">*</span></label>
-                                                    <select class="form-select item-select" name="items[0][item_id]" required>
-                                                        <option value="">Select an item</option>
-                                                        <option value="add_new" style="font-weight: bold; color: #007bff;">➕ Add New Item</option>
-                                                        <?php foreach ($inventory_items as $item): ?>
-                                                            <option value="<?php echo $item['id']; ?>"
-                                                                    data-price="<?php echo $item['unit_price']; ?>"
-                                                                    data-stock="<?php echo $item['current_stock']; ?>">
-                                                                <?php echo htmlspecialchars(sprintf(
-                                                                    '%s (%s) - Available: %d',
-                                                                    $item['item_name'],
-                                                                    $item['item_code'],
-                                                                    $item['current_stock']
-                                                                )); ?>
-                                                            </option>
-                                                        <?php endforeach; ?>
-                                                    </select>
+                                                    <div class="input-group">
+                                                        <select class="form-select item-select" name="items[0][item_id]" required style="display: block;">
+                                                            <option value="">Select an item</option>
+                                                            <option value="add_new" style="font-weight: bold; color: #007bff;">➕ Add New Item</option>
+                                                            <?php foreach ($inventory_items as $item): ?>
+                                                                <option value="<?php echo $item['id']; ?>"
+                                                                        data-price="<?php echo $item['unit_price']; ?>"
+                                                                        data-stock="<?php echo $item['current_stock']; ?>">
+                                                                    <?php echo htmlspecialchars(sprintf(
+                                                                        '%s (%s) - Available: %d',
+                                                                        $item['item_name'],
+                                                                        $item['item_code'],
+                                                                        $item['current_stock']
+                                                                    )); ?>
+                                                                </option>
+                                                            <?php endforeach; ?>
+                                                        </select>
+                                                        <input type="text" class="form-control manual-item-input" name="items[0][manual_item_name]" placeholder="Enter item name manually" style="display: none;">
+                                                        <button type="button" class="btn btn-outline-secondary switch-to-dropdown" style="display: none;" onclick="switchToDropdown(this)">
+                                                            <i class="fa fa-list"></i>
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div class="col-md-2">
@@ -580,22 +581,28 @@ $order_stats = $stmt->fetch();
                                             <div class="col-md-3">
                                                 <div class="form-group">
                                                     <label class="form-label">Item <span class="text-danger">*</span></label>
-                                                    <select class="form-select item-select" name="items[0][item_id]" required>
-                                                        <option value="">Select an item</option>
-                                                        <option value="add_new" style="font-weight: bold; color: #007bff;">➕ Add New Item</option>
-                                                        <?php foreach ($inventory_items as $item): ?>
-                                                            <option value="<?php echo $item['id']; ?>"
-                                                                    data-price="<?php echo $item['unit_price']; ?>"
-                                                                    data-stock="<?php echo $item['current_stock']; ?>">
-                                                                <?php echo htmlspecialchars(sprintf(
-                                                                    '%s (%s) - Available: %d',
-                                                                    $item['item_name'],
-                                                                    $item['item_code'],
-                                                                    $item['current_stock']
-                                                                )); ?>
-                                                            </option>
-                                                        <?php endforeach; ?>
-                                                    </select>
+                                                    <div class="input-group">
+                                                        <select class="form-select item-select" name="items[0][item_id]" required style="display: block;">
+                                                            <option value="">Select an item</option>
+                                                            <option value="add_new" style="font-weight: bold; color: #007bff;">➕ Add New Item</option>
+                                                            <?php foreach ($inventory_items as $item): ?>
+                                                                <option value="<?php echo $item['id']; ?>"
+                                                                        data-price="<?php echo $item['unit_price']; ?>"
+                                                                        data-stock="<?php echo $item['current_stock']; ?>">
+                                                                    <?php echo htmlspecialchars(sprintf(
+                                                                        '%s (%s) - Available: %d',
+                                                                        $item['item_name'],
+                                                                        $item['item_code'],
+                                                                        $item['current_stock']
+                                                                    )); ?>
+                                                                </option>
+                                                            <?php endforeach; ?>
+                                                        </select>
+                                                        <input type="text" class="form-control manual-item-input" name="items[0][manual_item_name]" placeholder="Enter item name manually" style="display: none;">
+                                                        <button type="button" class="btn btn-outline-secondary switch-to-dropdown" style="display: none;" onclick="switchToDropdown(this)">
+                                                            <i class="fa fa-list"></i>
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div class="col-md-2">
@@ -1099,7 +1106,7 @@ async function viewOrderDetails(orderId) {
         // Show the modal
         const modalInstance = new bootstrap.Modal(modal);
         modalInstance.show();
-        
+
         // Fetch order details via AJAX
         const response = await fetch(`/nesrah/api/orders/${orderId}`, {
             method: 'GET',
@@ -1112,13 +1119,14 @@ async function viewOrderDetails(orderId) {
             const errorData = await response.json();
             throw new Error(errorData.error || 'Failed to fetch order details');
         }
-        
+
         const order = await response.json();
-        
+
         // Format the order details HTML
-        const orderDate = new Date(order.created_at).toLocaleString();
-                          (order.payment_status === 'pending' ? 'warning' : 'info');
-        
+        const orderDate = new Date(order.order_date).toLocaleString();
+        const statusBadge = order.payment_status === 'paid' ? 'success' :
+                           (order.payment_status === 'pending' ? 'warning' : 'info');
+
         modalBody.innerHTML = `
             <div class="order-details">
                 <div class="row mb-3">
@@ -1132,7 +1140,7 @@ async function viewOrderDetails(orderId) {
                         </span>
                     </div>
                 </div>
-                
+
                 <div class="card mb-3">
                     <div class="card-header bg-light">
                         <h6 class="mb-0">Customer Information</h6>
@@ -1143,7 +1151,7 @@ async function viewOrderDetails(orderId) {
                         ${order.customer_email ? `<p class="mb-0"><strong>Email:</strong> ${order.customer_email}</p>` : ''}
                     </div>
                 </div>
-                
+
                 <div class="card mb-3">
                     <div class="card-header bg-light">
                         <h6 class="mb-0">Order Items</h6>
@@ -1160,16 +1168,16 @@ async function viewOrderDetails(orderId) {
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td>${order.item_name} (${order.item_code})</td>
+                                    <td>${order.item_name}</td>
                                     <td class="text-end">${order.quantity}</td>
-                                    <td class="text-end">${formatCurrency(order.unit_price)}</td>
-                                    <td class="text-end fw-bold">${formatCurrency(order.total_amount)}</td>
+                                    <td class="text-end">${order.unit_price} RWF</td>
+                                    <td class="text-end fw-bold">${order.total_amount} RWF</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-                
+
                 <div class="row">
                     <div class="col-md-6">
                         <div class="card">
@@ -1177,8 +1185,8 @@ async function viewOrderDetails(orderId) {
                                 <h6 class="mb-0">Payment Information</h6>
                             </div>
                             <div class="card-body">
-                                <p class="mb-1"><strong>Payment Method:</strong> ${order.payment_method.charAt(0).toUpperCase() + order.payment_method.slice(1)}</p>
-                                <p class="mb-0"><strong>Amount Paid:</strong> ${formatCurrency(order.amount_paid || 0)}</p>
+                                <p class="mb-1"><strong>Payment Method:</strong> ${order.payment_method}</p>
+                                <p class="mb-0"><strong>Amount Paid:</strong> ${order.amount_paid} RWF</p>
                             </div>
                         </div>
                     </div>
@@ -1190,17 +1198,17 @@ async function viewOrderDetails(orderId) {
                             <div class="card-body">
                                 <div class="d-flex justify-content-between mb-2">
                                     <span>Subtotal:</span>
-                                    <span>${formatCurrency(order.total_amount)}</span>
+                                    <span>${order.total_amount} RWF</span>
                                 </div>
                                 <div class="d-flex justify-content-between fw-bold">
                                     <span>Total:</span>
-                                    <span>${formatCurrency(order.total_amount)}</span>
+                                    <span>${order.total_amount} RWF</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                
+
                 ${order.notes ? `
                 <div class="card mt-3">
                     <div class="card-header bg-light">
@@ -1213,7 +1221,7 @@ async function viewOrderDetails(orderId) {
                 ` : ''}
             </div>
         `;
-        
+
     } catch (error) {
         console.error('Error fetching order details:', error);
         const modalBody = document.querySelector('#orderDetailsModal .modal-body');

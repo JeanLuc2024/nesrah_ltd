@@ -146,13 +146,13 @@ $attendance_report = $stmt->fetch();
     <div class="col-md-3">
         <div class="full counter_section margin_bottom_30">
             <div class="couter_icon">
-                <div> 
+                <div>
                     <i class="fa fa-shopping-cart yellow_color"></i>
                 </div>
             </div>
             <div class="counter_no">
                 <div>
-                    <p class="total_no"><?php echo $sales_report['total_sales']; ?></p>
+                    <p class="total_no"><?php echo $sales_report['total_sales'] ?? 0; ?></p>
                     <p class="head_couter">Total Sales</p>
                 </div>
             </div>
@@ -161,13 +161,13 @@ $attendance_report = $stmt->fetch();
     <div class="col-md-3">
         <div class="full counter_section margin_bottom_30">
             <div class="couter_icon">
-                <div> 
+                <div>
                     <i class="fa fa-dollar green_color"></i>
                 </div>
             </div>
             <div class="counter_no">
                 <div>
-                    <p class="total_no"><?php echo formatCurrency($sales_report['total_revenue']); ?></p>
+                    <p class="total_no"><?php echo formatCurrency($sales_report['total_revenue'] ?? 0); ?></p>
                     <p class="head_couter">Total Revenue</p>
                 </div>
             </div>
@@ -176,13 +176,13 @@ $attendance_report = $stmt->fetch();
     <div class="col-md-3">
         <div class="full counter_section margin_bottom_30">
             <div class="couter_icon">
-                <div> 
+                <div>
                     <i class="fa fa-tasks blue1_color"></i>
                 </div>
             </div>
             <div class="counter_no">
                 <div>
-                    <p class="total_no"><?php echo $task_report['completed_tasks']; ?>/<?php echo $task_report['total_tasks']; ?></p>
+                    <p class="total_no"><?php echo ($task_report['completed_tasks'] ?? 0) . '/' . ($task_report['total_tasks'] ?? 0); ?></p>
                     <p class="head_couter">Tasks Completed</p>
                 </div>
             </div>
@@ -191,7 +191,7 @@ $attendance_report = $stmt->fetch();
     <div class="col-md-3">
         <div class="full counter_section margin_bottom_30">
             <div class="couter_icon">
-                <div> 
+                <div>
                     <i class="fa fa-clock-o red_color"></i>
                 </div>
             </div>
@@ -372,96 +372,207 @@ $attendance_report = $stmt->fetch();
 <style>
 @media print {
     /* Hide navigation and controls */
-    .sidebar, .topbar, .btn, .form-control, .form-group, 
-    .navbar, .icon_info, .user_profile_dd, .footer {
+    .sidebar, .topbar, .btn, .form-control, .form-group,
+    .navbar, .icon_info, .user_profile_dd, .footer,
+    .column_title, .margin_bottom_30, .full, .graph_head {
         display: none !important;
     }
-    
+
     /* Show main content */
-    #content, .midde_cont, .container-fluid {
+    body {
+        margin: 0 !important;
+        padding: 20px !important;
+        font-family: Arial, sans-serif !important;
+        font-size: 12px !important;
+        line-height: 1.4 !important;
+        color: #000 !important;
+    }
+
+    .container-fluid {
         margin: 0 !important;
         padding: 0 !important;
         width: 100% !important;
         max-width: none !important;
     }
-    
+
     /* Ensure content is visible */
-    .white_shd, .counter_section, .table-responsive, 
-    .full, .graph_head, .graph_revenue {
+    .white_shd, .counter_section, .table-responsive,
+    .graph_revenue, .row, .col-md-12, .col-md-6, .col-md-3 {
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
-    }
-    
-    .white_shd {
         box-shadow: none !important;
-        border: 1px solid #ddd !important;
+        border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .row {
+        margin: 0 -15px !important;
+    }
+
+    .col-md-12, .col-md-6, .col-md-3 {
+        padding: 0 15px !important;
         margin-bottom: 20px !important;
+    }
+
+    .counter_section {
+        border: 1px solid #ddd !important;
+        border-radius: 5px !important;
+        padding: 15px !important;
+        margin-bottom: 15px !important;
         page-break-inside: avoid;
     }
-    
+
+    .couter_icon {
+        float: left !important;
+        margin-right: 15px !important;
+    }
+
+    .counter_no {
+        overflow: hidden !important;
+    }
+
+    .total_no {
+        font-size: 24px !important;
+        font-weight: bold !important;
+        color: #000 !important;
+    }
+
+    .head_couter {
+        font-size: 12px !important;
+        color: #666 !important;
+        margin-top: 5px !important;
+    }
+
     .page_title h2 {
         color: #000 !important;
         font-size: 24px !important;
         margin-bottom: 20px !important;
+        text-align: center !important;
+        border-bottom: 2px solid #000 !important;
+        padding-bottom: 10px !important;
     }
-    
+
     .heading1 h2 {
         color: #000 !important;
         font-size: 18px !important;
         margin-bottom: 15px !important;
+        border-bottom: 1px solid #ddd !important;
+        padding-bottom: 5px !important;
     }
-    
+
     table {
         border-collapse: collapse !important;
         width: 100% !important;
+        margin-bottom: 20px !important;
         page-break-inside: avoid;
     }
-    
+
     table th, table td {
         border: 1px solid #000 !important;
         padding: 8px !important;
         text-align: left !important;
+        vertical-align: top !important;
     }
-    
+
     table th {
         background-color: #f5f5f5 !important;
         font-weight: bold !important;
+        color: #000 !important;
     }
-    
+
     .badge {
         background-color: #000 !important;
         color: #fff !important;
+        padding: 2px 6px !important;
+        border-radius: 3px !important;
+        font-size: 10px !important;
     }
-    
-    body {
-        font-size: 12px !important;
-        line-height: 1.4 !important;
-        color: #000 !important;
+
+    .text-muted {
+        color: #666 !important;
     }
-    
+
     .print-header {
         text-align: center;
         margin-bottom: 30px;
         border-bottom: 2px solid #000;
         padding-bottom: 10px;
     }
-    
+
     .print-header h1 {
         margin: 0;
         font-size: 28px;
         color: #000;
     }
-    
+
     .print-header p {
         margin: 5px 0 0 0;
         font-size: 14px;
         color: #666;
     }
-    
+
+    /* Page break controls */
+    .row:not(:last-child) {
+        margin-bottom: 30px !important;
+    }
+
     /* Ensure all text is black */
     * {
         color: #000 !important;
+    }
+
+    /* Hide empty elements */
+    .text-muted:empty {
+        display: none !important;
+    }
+
+    /* Show print header */
+    .print-header {
+        display: block !important;
+    }
+
+    /* Ensure report content is visible */
+    .row.column_title,
+    .row.column1,
+    .row:has(.white_shd) {
+        display: block !important;
+    }
+
+    /* Specifically ensure Stock Movement History table is visible */
+    .row:has(.white_shd) .table-responsive,
+    .row:has(.white_shd) table,
+    .row:has(.white_shd) thead,
+    .row:has(.white_shd) tbody,
+    .row:has(.white_shd) tr,
+    .row:has(.white_shd) th,
+    .row:has(.white_shd) td {
+        display: table !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    /* Ensure table cells have proper display */
+    .row:has(.white_shd) td,
+    .row:has(.white_shd) th {
+        display: table-cell !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    /* Make sure table headers are visible */
+    .row:has(.white_shd) thead tr:first-child {
+        display: table-row !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    /* Ensure table body rows are visible */
+    .row:has(.white_shd) tbody tr {
+        display: table-row !important;
+        visibility: visible !important;
+        opacity: 1 !important;
     }
 }
 
